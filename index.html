@@ -11,13 +11,22 @@
   <style id="boot-critical">
     .hidden { display: none !important; }
     body { margin: 0; background: #0c1018; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; touch-action: none; }
+    .joystick-zone { position:absolute; z-index:6; width:128px; height:128px; bottom:calc(28px + env(safe-area-inset-bottom,0px)); left:calc(16px + env(safe-area-inset-left,0px)); }
+    .joystick-base { width:100%; height:100%; border-radius:50%; background:rgba(255,255,255,.08); border:2px solid rgba(0,212,255,.28); position:relative; touch-action:none; }
+    .joystick-knob { position:absolute; width:54px; height:54px; border-radius:50%; background:rgba(0,212,255,.4); border:2px solid rgba(255,255,255,.45); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
+    .boost-btn { position:absolute; z-index:6; width:76px; height:76px; border-radius:50%; border:2px solid rgba(255,170,68,.5); background:rgba(255,140,40,.22); color:#ffd7a0; font-weight:800; font-size:12px; bottom:calc(36px + env(safe-area-inset-bottom,0px)); right:calc(16px + env(safe-area-inset-right,0px)); touch-action:none; }
+    .boost-btn.active { background:rgba(255,140,40,.6); color:#fff; }
+    .boost-btn.hidden, .joystick-zone.hidden, .boost-energy.hidden { display:none !important; }
+    .boost-energy { position:absolute; z-index:6; width:60px; height:5px; border-radius:4px; background:rgba(255,255,255,.12); bottom:calc(120px + env(safe-area-inset-bottom,0px)); right:24px; overflow:hidden; }
+    #boost-energy-fill { height:100%; width:100%; background:linear-gradient(90deg,#ff8c28,#ffd060); transform-origin:left center; }
+    .hud-mass { background:rgba(20,20,35,.85); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:8px 12px; margin-left:8px; }
+    .hud-right { display:flex; gap:8px; }
   </style>
   <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
   <div id="game-root">
     <div id="canvas-container"></div>
-
     <div id="hud" class="hud hidden">
       <div class="hud-top">
         <div class="hud-score">
@@ -40,7 +49,6 @@
         <div id="objective" class="objective" data-i18n="objective_collect">Collect orbs · Hold BOOST</div>
       </div>
     </div>
-
     <div id="screen-menu" class="screen">
       <div class="menu-bg"></div>
       <div class="menu-content">
@@ -55,18 +63,9 @@
           <button id="btn-settings" class="btn btn-ghost" data-i18n="settings">SETTINGS</button>
         </div>
         <div class="menu-stats">
-          <div class="stat">
-            <span class="stat-value" id="best-score">0</span>
-            <span class="stat-label" data-i18n="best_score">Best</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="player-level">1</span>
-            <span class="stat-label" data-i18n="level">Level</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value" id="coins">0</span>
-            <span class="stat-label" data-i18n="coins">Coins</span>
-          </div>
+          <div class="stat"><span class="stat-value" id="best-score">0</span><span class="stat-label" data-i18n="best_score">Best</span></div>
+          <div class="stat"><span class="stat-value" id="player-level">1</span><span class="stat-label" data-i18n="level">Level</span></div>
+          <div class="stat"><span class="stat-value" id="coins">0</span><span class="stat-label" data-i18n="coins">Coins</span></div>
         </div>
         <div class="lang-switch">
           <button id="btn-lang-en" class="lang-btn active">EN</button>
@@ -74,7 +73,6 @@
         </div>
       </div>
     </div>
-
     <div id="screen-pause" class="screen hidden">
       <div class="panel">
         <h2 data-i18n="paused">PAUSED</h2>
@@ -83,22 +81,15 @@
         <button id="btn-quit" class="btn btn-ghost" data-i18n="quit">QUIT</button>
       </div>
     </div>
-
     <div id="screen-gameover" class="screen hidden">
       <div class="panel">
         <h2 data-i18n="game_over">GAME OVER</h2>
-        <div class="result-score">
-          <span class="label" data-i18n="score">Score</span>
-          <span id="final-score">0</span>
-        </div>
-        <div class="result-best">
-          <span data-i18n="best_score">Best</span>: <span id="final-best">0</span>
-        </div>
+        <div class="result-score"><span class="label" data-i18n="score">Score</span><span id="final-score">0</span></div>
+        <div class="result-best"><span data-i18n="best_score">Best</span>: <span id="final-best">0</span></div>
         <button id="btn-retry" class="btn btn-primary" data-i18n="retry">RETRY</button>
         <button id="btn-menu" class="btn btn-secondary" data-i18n="menu">MENU</button>
       </div>
     </div>
-
     <div id="screen-loading" class="screen">
       <div class="loading-content">
         <div class="loading-snake"></div>
@@ -106,7 +97,6 @@
         <p id="loading-tip" data-i18n="loading">Loading Sector Arena...</p>
       </div>
     </div>
-
     <div id="joystick-zone" class="joystick-zone hand-left hidden">
       <div id="joystick-base" class="joystick-base">
         <div id="joystick-knob" class="joystick-knob"></div>
@@ -115,7 +105,6 @@
     <button id="btn-boost" class="boost-btn hand-left hidden" type="button" aria-label="Boost">BOOST</button>
     <div id="boost-energy" class="boost-energy hidden"><div id="boost-energy-fill"></div></div>
   </div>
-
   <script type="importmap">
   {
     "imports": {
