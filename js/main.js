@@ -28,19 +28,18 @@ class Snake3DApp {
       finalScore: document.getElementById('final-score'),
       finalBest: document.getElementById('final-best'),
       bestScore: document.getElementById('best-score'),
-      playerLevel: document.getElementById('player-level'),
       coins: document.getElementById('coins'),
+      playerLevel: document.getElementById('player-level'),
       loadingFill: document.getElementById('loading-fill'),
+      loadingTip: document.getElementById('loading-tip'),
     };
-
-    this._bindUI();
-    this.i18n.apply();
   }
 
   async start() {
-    this._setProgress(10);
-    await this._loadStats();
-    this._setProgress(40);
+    this.i18n.apply();
+    this._bindUI();
+    this.stats = await this.bridge.getStats();
+    this._renderStats();
 
     const container = document.getElementById('canvas-container');
     this.engine = new GameEngine(container, {
@@ -49,35 +48,23 @@ class Snake3DApp {
       onGameOver: (data) => this._onGameOver(data),
     });
 
-    this._setProgress(70);
+    this._setLoading(0.3, 'init');
     await this.engine.init();
-    this._setProgress(100);
+    this._setLoading(1, 'ready');
 
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 200));
     this.engine.startLoop();
     this._showScreen('menu');
-    this._updateMenuStats();
-  }
-
-  async _loadStats() {
-    this.stats = await this.bridge.getPlayerStats();
-  }
-
-  _setProgress(p) {
-    if (this.els.loadingFill) {
-      this.els.loadingFill.style.width = p + '%';
-    }
   }
 
   _bindUI() {
     document.getElementById('btn-play')?.addEventListener('click', () => this._play());
-    document.getElementById('btn-resume')?.addEventListener('click', () => this.engine.resume());
-    document.getElementById('btn-restart')?.addEventListener('click', () => this._play());
-    document.getElementById('btn-quit')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-retry')?.addEventListener('click', () => this._play());
+    document.getElementById('btn-restart')?.addEventListener('click', () => this._play());
+    document.getElementById('btn-resume')?.addEventListener('click', () => this.engine.resume());
+    document.getElementById('btn-quit')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-menu')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-pause')?.addEventListener('click', () => this.engine.pause());
-
     document.getElementById('btn-lang-en')?.addEventListener('click', () => {
       this.i18n.setLanguage('en');
       this._updateLangButtons();
@@ -86,18 +73,6 @@ class Snake3DApp {
       this.i18n.setLanguage('fa');
       this._updateLangButtons();
     });
-
-    document.getElementById('btn-worlds')?.addEventListener('click', () => {
-      alert(this.i18n.t('worlds') + ' — coming in next phase');
-    });
-    document.getElementById('btn-customize')?.addEventListener('click', () => {
-      alert(this.i18n.t('customize') + ' — coming in next phase');
-    });
-    document.getElementById('btn-settings')?.addEventListener('click', () => {
-      alert(this.i18n.t('settings') + ' — coming in next phase');
-    });
-
-    this._updateLangButtons();
   }
 
   _updateLangButtons() {
@@ -105,71 +80,82 @@ class Snake3DApp {
     document.getElementById('btn-lang-fa')?.classList.toggle('active', this.i18n.language === 'fa');
   }
 
-  _showScreen(name) {
-    ['loading', 'menu', 'pause', 'gameover'].forEach((n) => {
-      this.els[n]?.classList.toggle('hidden', n !== name);
-    });
-    this.els.hud?.classList.toggle('hidden', name !== null && name !== 'playing');
+  _setLoading(pct, tip) {
+    if (this.els.loadingFill) this.els.loadingFill.style.width = `${Math.floor(pct * 100)}%`;
+    if (tip && this.els.loadingTip) this.els.loadingTip.textContent = this.i18n.t(tip) || tip;
   }
 
-  _onState(state) {
-    switch (state) {
-      case GameState.MENU:
-        this._showScreen('menu');
-        this.els.hud?.classList.add('hidden');
-        break;
-      case GameState.PLAYING:
-        this._showScreen(null);
-        this.els.loading?.classList.add('hidden');
-        this.els.menu?.classList.add('hidden');
-        this.els.pause?.classList.add('hidden');
-        this.els.gameover?.classList.add('hidden');
-        this.els.hud?.classList.remove('hidden');
-        break;
-      case GameState.PAUSED:
-        this.els.pause?.classList.remove('hidden');
-        break;
-      case GameState.GAMEOVER:
-        this.els.gameover?.classList.remove('hidden');
-        this.els.hud?.classList.add('hidden');
-        break;
+  _showScreen(name) {
+    const map = {
+      loading: this.els.loading,
+      menu: this.els.menu,
+      pause: this.els.pause,
+      gameover: this.els.gameover,
+    };
+    Object.entries(map).forEach(([k, el]) => {
+      if (!el) return;
+      el.classList.toggle('hidden', k !== name);
+    });
+    if (this.els.hud) this.els.hud.classList.toggle('hidden', name !== null && name !== 'playing');
+  }
+
+  _onState(s) {
+    if (s === GameState.PLAYING) {
+      this._showScreen(null);
+      if (this.els.hud) this.els.hud.classList.remove('hidden');
+      if (this.els.menu) this.els.menu.classList.add('hidden');
+      if (this.els.pause) this.els.pause.classList.add('hidden');
+      if (this.els.gameover) this.els.gameover.classList.add('hidden');
+      if (this.els.loading) this.els.loading.classList.add('hidden');
+    } else if (s === GameState.PAUSED) {
+      this.els.pause?.classList.remove('hidden');
+    } else if (s === GameState.GAMEOVER) {
+      this.els.gameover?.classList.remove('hidden');
+      if (this.els.hud) this.els.hud.classList.add('hidden');
+    } else if (s === GameState.MENU) {
+      this._showScreen('menu');
+      if (this.els.hud) this.els.hud.classList.add('hidden');
     }
   }
 
   _onScore(score, combo) {
     if (this.els.score) this.els.score.textContent = score;
-    if (combo > 1) {
-      this.els.combo?.classList.remove('hidden');
-      if (this.els.comboValue) this.els.comboValue.textContent = 'x' + Math.floor(combo);
-    } else {
-      this.els.combo?.classList.add('hidden');
+    const massEl = document.getElementById('mass-value');
+    if (massEl && this.engine) massEl.textContent = this.engine.getLength();
+    if (combo > 1 && this.els.combo && this.els.comboValue) {
+      this.els.combo.classList.remove('hidden');
+      this.els.comboValue.textContent = `x${combo.toFixed(1)}`;
+    } else if (this.els.combo) {
+      this.els.combo.classList.add('hidden');
     }
   }
 
-  async _onGameOver({ score }) {
-    if (this.els.finalScore) this.els.finalScore.textContent = score;
-    const updated = await this.bridge.submitScore(score);
-    this.stats = updated;
-    if (this.els.finalBest) this.els.finalBest.textContent = updated.bestScore;
-    this._updateMenuStats();
+  async _onGameOver(data) {
+    if (this.els.finalScore) this.els.finalScore.textContent = data.score;
+    this.stats = await this.bridge.saveScore(data.score);
+    this._renderStats();
+    if (this.els.finalBest) this.els.finalBest.textContent = this.stats.bestScore;
   }
 
-  _updateMenuStats() {
+  _renderStats() {
     if (!this.stats) return;
     if (this.els.bestScore) this.els.bestScore.textContent = this.stats.bestScore || 0;
-    if (this.els.playerLevel) this.els.playerLevel.textContent = this.stats.level || 1;
     if (this.els.coins) this.els.coins.textContent = this.stats.coins || 0;
+    if (this.els.playerLevel) this.els.playerLevel.textContent = this.stats.level || 1;
   }
 
   _play() {
-    if (this.els.score) this.els.score.textContent = '0';
-    this.els.combo?.classList.add('hidden');
     this.engine.startGame();
+    const massEl = document.getElementById('mass-value');
+    if (massEl) massEl.textContent = this.engine.getLength();
+    if (this.els.score) this.els.score.textContent = '0';
   }
 
   _toMenu() {
     this.engine.setState(GameState.MENU);
-    this._updateMenuStats();
+    this.engine.input.setEnabled(false);
+    this.engine.input.showControls?.(false);
+    this.engine.input.showJoystick?.(false);
   }
 }
 
