@@ -14,74 +14,85 @@ export class SectorCity {
   }
 
   _build() {
+    const size = this.bounds * 2;
     const groundGeo = new THREE.CircleGeometry(this.bounds + 2, 64);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2e, metalness: 0.15, roughness: 0.85 });
+    const groundMat = new THREE.MeshStandardMaterial({ color: 0x121a28, metalness: 0.15, roughness: 0.85 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.group.add(ground);
 
-    const grid = new THREE.GridHelper(this.bounds * 2, 40, 0x2a3350, 0x222838);
+    const grid = new THREE.GridHelper(size, 42, 0x1e3a5f, 0x162033);
     grid.position.y = 0.02;
-    grid.material.opacity = 0.35;
+    grid.material.opacity = 0.45;
     grid.material.transparent = true;
     this.group.add(grid);
 
-    const wallH = 1.2;
-    const wallGeo = new THREE.CylinderGeometry(this.bounds, this.bounds, wallH, 64, 1, true);
+    const ringGeo = new THREE.RingGeometry(this.bounds - 0.6, this.bounds - 0.15, 96);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0x2ee6ff, emissive: 0x0a6080, emissiveIntensity: 0.35,
+      metalness: 0.5, roughness: 0.4, side: THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.05;
+    this.group.add(ring);
+
+    const wallGeo = new THREE.CylinderGeometry(this.bounds, this.bounds, 1.2, 64, 1, true);
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x2a3555, metalness: 0.4, roughness: 0.5, side: THREE.DoubleSide,
-      emissive: 0x0a1528, emissiveIntensity: 0.25,
+      color: 0x1a2740, emissive: 0x0a1830, emissiveIntensity: 0.2,
+      metalness: 0.3, roughness: 0.6, side: THREE.DoubleSide, transparent: true, opacity: 0.85,
     });
     const wall = new THREE.Mesh(wallGeo, wallMat);
-    wall.position.y = wallH / 2;
+    wall.position.y = 0.6;
     this.group.add(wall);
 
-    const rimGeo = new THREE.TorusGeometry(this.bounds, 0.12, 8, 64);
-    const rimMat = new THREE.MeshStandardMaterial({
-      color: 0x3d9eff, emissive: 0x1a60aa, emissiveIntensity: 0.6, metalness: 0.5, roughness: 0.3,
-    });
-    const rim = new THREE.Mesh(rimGeo, rimMat);
-    rim.rotation.x = Math.PI / 2;
-    rim.position.y = wallH;
-    this.group.add(rim);
-
-    const pillarGeo = new THREE.CylinderGeometry(0.45, 0.55, 3.5, 8);
+    const pillarGeo = new THREE.BoxGeometry(1.2, 3.5, 1.2);
     const pillarMat = new THREE.MeshStandardMaterial({
-      color: 0x3a4560, metalness: 0.5, roughness: 0.4, emissive: 0x101828, emissiveIntensity: 0.2,
+      color: 0x243550, metalness: 0.4, roughness: 0.5, emissive: 0x102030, emissiveIntensity: 0.25,
     });
-    const capGeo = new THREE.CylinderGeometry(0.65, 0.45, 0.25, 8);
-    const capMat = new THREE.MeshStandardMaterial({ color: 0x4aa3ff, emissive: 0x1a5080, emissiveIntensity: 0.5 });
-    const positions = [[18,18],[-18,18],[18,-18],[-18,-18],[0,28],[0,-28],[28,0],[-28,0]];
-    for (const [x, z] of positions) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      const r = this.bounds - 6;
       const p = new THREE.Mesh(pillarGeo, pillarMat);
-      p.position.set(x, 1.75, z);
+      p.position.set(Math.cos(a) * r, 1.75, Math.sin(a) * r);
       p.castShadow = true;
       p.receiveShadow = true;
       this.group.add(p);
-      const cap = new THREE.Mesh(capGeo, capMat);
-      cap.position.set(x, 3.6, z);
+      const cap = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.2, 1.4),
+        new THREE.MeshStandardMaterial({ color: 0x3dffb5, emissive: 0x1a8060, emissiveIntensity: 0.5 })
+      );
+      cap.position.set(Math.cos(a) * r, 3.6, Math.sin(a) * r);
       this.group.add(cap);
     }
 
-    const padGeo = new THREE.CylinderGeometry(2.2, 2.4, 0.15, 16);
+    const padGeo = new THREE.CylinderGeometry(4, 4.5, 0.25, 32);
     const padMat = new THREE.MeshStandardMaterial({
-      color: 0x243048, metalness: 0.3, roughness: 0.6, emissive: 0x0c1830, emissiveIntensity: 0.3,
+      color: 0x1a2840, metalness: 0.35, roughness: 0.55, emissive: 0x0c1830, emissiveIntensity: 0.25,
     });
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      const r = 22;
-      const pad = new THREE.Mesh(padGeo, padMat);
-      pad.position.set(Math.cos(a) * r, 0.08, Math.sin(a) * r);
-      pad.receiveShadow = true;
-      this.group.add(pad);
+    const pad = new THREE.Mesh(padGeo, padMat);
+    pad.position.y = 0.12;
+    pad.receiveShadow = true;
+    this.group.add(pad);
+
+    const dotGeo = new THREE.CircleGeometry(0.35, 12);
+    const dotMat = new THREE.MeshStandardMaterial({
+      color: 0x3dffb5, emissive: 0x1a8060, emissiveIntensity: 0.4, transparent: true, opacity: 0.7,
+    });
+    for (let i = 0; i < 24; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = 8 + Math.random() * (this.bounds - 12);
+      const d = new THREE.Mesh(dotGeo, dotMat);
+      d.rotation.x = -Math.PI / 2;
+      d.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r);
+      this.group.add(d);
     }
     this._t = 0;
   }
 
   checkCollision(pos, radius = 0.3) {
-    const r = Math.hypot(pos.x, pos.z);
-    return r + radius > this.bounds - 0.4;
+    return Math.hypot(pos.x, pos.z) + radius > this.bounds - 0.5;
   }
 
   update(dt, time) { this._t = time; }
