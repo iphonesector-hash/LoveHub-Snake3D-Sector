@@ -1,6 +1,5 @@
 /**
- * Sector City — first playable 3D world
- * Futuristic technological arena
+ * Sector Arena — playable arena environment
  */
 
 import * as THREE from 'three';
@@ -8,176 +7,146 @@ import * as THREE from 'three';
 export class SectorCity {
   constructor(scene) {
     this.scene = scene;
-    this.bounds = 20;
-    this.obstacles = [];
+    this.bounds = 28;
     this.group = new THREE.Group();
     scene.add(this.group);
     this._build();
   }
 
   _build() {
-    const groundGeo = new THREE.PlaneGeometry(this.bounds * 2.4, this.bounds * 2.4, 32, 32);
+    const groundGeo = new THREE.CircleGeometry(this.bounds + 2, 64);
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x0c0c18,
-      metalness: 0.6,
-      roughness: 0.7,
+      color: 0x1a1f2e,
+      metalness: 0.15,
+      roughness: 0.85,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.group.add(ground);
 
-    const grid = new THREE.GridHelper(this.bounds * 2, 40, 0x00d4ff, 0x1a1a30);
-    grid.position.y = 0.01;
-    grid.material.opacity = 0.25;
+    const grid = new THREE.GridHelper(this.bounds * 2, 40, 0x2a3a55, 0x222a3a);
+    grid.position.y = 0.02;
+    grid.material.opacity = 0.35;
     grid.material.transparent = true;
     this.group.add(grid);
 
-    this._createBoundary();
-    this._createDecor();
-    this._createAmbient();
-
-    const ambientAccent = new THREE.PointLight(0x00d4ff, 0.4, 30);
-    ambientAccent.position.set(0, 8, 0);
-    this.group.add(ambientAccent);
-
-    const accent2 = new THREE.PointLight(0x5e5ce6, 0.3, 25);
-    accent2.position.set(10, 5, -10);
-    this.group.add(accent2);
-  }
-
-  _createBoundary() {
-    const wallHeight = 1.2;
+    const wallGeo = new THREE.TorusGeometry(this.bounds, 0.35, 8, 96);
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x111122,
-      metalness: 0.7,
-      roughness: 0.4,
-      emissive: 0x003344,
-      emissiveIntensity: 0.15,
-      transparent: true,
-      opacity: 0.85,
-    });
-
-    const thickness = 0.4;
-    const size = this.bounds * 2;
-
-    const sides = [
-      { w: size + thickness * 2, d: thickness, x: 0, z: -this.bounds - thickness / 2 },
-      { w: size + thickness * 2, d: thickness, x: 0, z: this.bounds + thickness / 2 },
-      { w: thickness, d: size, x: -this.bounds - thickness / 2, z: 0 },
-      { w: thickness, d: size, x: this.bounds + thickness / 2, z: 0 },
-    ];
-
-    sides.forEach((s) => {
-      const geo = new THREE.BoxGeometry(s.w, wallHeight, s.d);
-      const mesh = new THREE.Mesh(geo, wallMat);
-      mesh.position.set(s.x, wallHeight / 2, s.z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.group.add(mesh);
-      this.obstacles.push({
-        type: 'wall',
-        minX: s.x - s.w / 2,
-        maxX: s.x + s.w / 2,
-        minZ: s.z - s.d / 2,
-        maxZ: s.z + s.d / 2,
-      });
-    });
-
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.6 });
-    const edgePoints = [
-      new THREE.Vector3(-this.bounds, 0.05, -this.bounds),
-      new THREE.Vector3(this.bounds, 0.05, -this.bounds),
-      new THREE.Vector3(this.bounds, 0.05, this.bounds),
-      new THREE.Vector3(-this.bounds, 0.05, this.bounds),
-      new THREE.Vector3(-this.bounds, 0.05, -this.bounds),
-    ];
-    const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
-    const edge = new THREE.Line(edgeGeo, edgeMat);
-    this.group.add(edge);
-  }
-
-  _createDecor() {
-    const pillarMat = new THREE.MeshStandardMaterial({
-      color: 0x151528,
-      metalness: 0.8,
-      roughness: 0.3,
-      emissive: 0x002233,
+      color: 0x3d5a80,
+      metalness: 0.4,
+      roughness: 0.5,
+      emissive: 0x0a1525,
       emissiveIntensity: 0.2,
     });
+    const wall = new THREE.Mesh(wallGeo, wallMat);
+    wall.rotation.x = Math.PI / 2;
+    wall.position.y = 0.35;
+    wall.castShadow = true;
+    this.group.add(wall);
 
-    const positions = [
-      [-12, -12], [12, -12], [-12, 12], [12, 12],
-      [-8, 0], [8, 0], [0, -8], [0, 8],
-    ];
+    const ring2 = new THREE.Mesh(
+      new THREE.TorusGeometry(this.bounds * 0.55, 0.08, 6, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0x00a8c8,
+        emissive: 0x004455,
+        emissiveIntensity: 0.4,
+        transparent: true,
+        opacity: 0.5,
+      })
+    );
+    ring2.rotation.x = Math.PI / 2;
+    ring2.position.y = 0.05;
+    this.group.add(ring2);
 
-    positions.forEach(([x, z]) => {
-      const h = 1.5 + Math.random() * 2;
-      const geo = new THREE.CylinderGeometry(0.35, 0.45, h, 8);
-      const mesh = new THREE.Mesh(geo, pillarMat);
-      mesh.position.set(x, h / 2, z);
-      mesh.castShadow = true;
-      this.group.add(mesh);
-
-      this.obstacles.push({
-        type: 'pillar',
-        minX: x - 0.5,
-        maxX: x + 0.5,
-        minZ: z - 0.5,
-        maxZ: z + 0.5,
-      });
-
-      const light = new THREE.PointLight(0x00d4ff, 0.35, 6);
-      light.position.set(x, h + 0.3, z);
-      this.group.add(light);
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: 0x2c3548,
+      metalness: 0.3,
+      roughness: 0.6,
+      emissive: 0x111820,
+      emissiveIntensity: 0.15,
     });
-  }
-
-  _createAmbient() {
-    const count = 40;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * this.bounds * 2;
-      positions[i * 3 + 1] = 1 + Math.random() * 6;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * this.bounds * 2;
+    const accents = [0x00c4d4, 0x5e7ce6, 0x4a9fff];
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const r = this.bounds * 0.78;
+      const h = 1.2 + (i % 3) * 0.6;
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, h, 8), pillarMat);
+      p.position.set(Math.cos(a) * r, h / 2, Math.sin(a) * r);
+      p.castShadow = true;
+      this.group.add(p);
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 8, 8),
+        new THREE.MeshStandardMaterial({
+          color: accents[i % 3],
+          emissive: accents[i % 3],
+          emissiveIntensity: 0.6,
+        })
+      );
+      tip.position.set(Math.cos(a) * r, h + 0.15, Math.sin(a) * r);
+      this.group.add(tip);
     }
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const mat = new THREE.PointsMaterial({
-      color: 0x00d4ff,
-      size: 0.08,
-      transparent: true,
-      opacity: 0.6,
-    });
-    this.particles = new THREE.Points(geo, mat);
-    this.group.add(this.particles);
+
+    const center = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 2.5, 0.12, 32),
+      new THREE.MeshStandardMaterial({
+        color: 0x243044,
+        metalness: 0.25,
+        roughness: 0.7,
+        emissive: 0x0a1828,
+        emissiveIntensity: 0.25,
+      })
+    );
+    center.position.y = 0.06;
+    center.receiveShadow = true;
+    this.group.add(center);
+
+    this.obstacles = [];
+    const positions = [
+      [8, 8], [-9, 6], [10, -7], [-7, -10], [0, 12], [14, 2], [-12, -3], [5, -14],
+    ];
+    for (const [x, z] of positions) {
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(1.4, 0.7, 1.4),
+        new THREE.MeshStandardMaterial({ color: 0x2a3348, metalness: 0.2, roughness: 0.75 })
+      );
+      box.position.set(x, 0.35, z);
+      box.castShadow = true;
+      box.receiveShadow = true;
+      this.group.add(box);
+      this.obstacles.push({ pos: new THREE.Vector3(x, 0, z), radius: 1.0 });
+    }
+
+    const pGeo = new THREE.BufferGeometry();
+    const count = 80;
+    const arr = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const r = Math.random() * this.bounds * 0.9;
+      arr[i * 3] = Math.cos(a) * r;
+      arr[i * 3 + 1] = 0.5 + Math.random() * 3;
+      arr[i * 3 + 2] = Math.sin(a) * r;
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    const pts = new THREE.Points(
+      pGeo,
+      new THREE.PointsMaterial({ color: 0x6a8ab0, size: 0.08, transparent: true, opacity: 0.4 })
+    );
+    this.group.add(pts);
+    this._pts = pts;
   }
 
   checkCollision(pos, radius = 0.3) {
-    if (
-      Math.abs(pos.x) > this.bounds - radius ||
-      Math.abs(pos.z) > this.bounds - radius
-    ) {
-      return true;
-    }
-
+    const d = Math.hypot(pos.x, pos.z);
+    if (d + radius > this.bounds - 0.2) return true;
     for (const o of this.obstacles) {
-      if (
-        pos.x + radius > o.minX &&
-        pos.x - radius < o.maxX &&
-        pos.z + radius > o.minZ &&
-        pos.z - radius < o.maxZ
-      ) {
-        return true;
-      }
+      if (pos.distanceTo(o.pos) < o.radius + radius) return true;
     }
     return false;
   }
 
   update(dt, time) {
-    if (this.particles) {
-      this.particles.rotation.y += dt * 0.05;
-    }
+    if (this._pts) this._pts.rotation.y = time * 0.02;
   }
 
   dispose() {
