@@ -5,11 +5,11 @@
 import * as THREE from 'three';
 
 const SPACING = 0.46;
-const BASE_SPEED = 8.0;
-const BOOST_SPEED = 14.5;
-const ACCEL = 28;
-const DECEL = 18;
-const TURN_RATE = 15.0;
+const BASE_SPEED = 8.4;
+const BOOST_SPEED = 15.2;
+const ACCEL = 32;
+const DECEL = 20;
+const TURN_RATE = 16.5;
 const HEAD_R = 0.36;
 const BODY_R = 0.29;
 const HISTORY_STEP = 0.1;
@@ -40,17 +40,9 @@ export class Snake {
   }
 
   _mats() {
-    this.headMat = new THREE.MeshStandardMaterial({
-      color: 0x2ee6ff, metalness: 0.4, roughness: 0.35,
-      emissive: 0x0a3040, emissiveIntensity: 0.4,
-    });
-    this.bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x4b7bff, metalness: 0.22, roughness: 0.48,
-      emissive: 0x101830, emissiveIntensity: 0.14,
-    });
-    this.eyeMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55,
-    });
+    this.headMat = new THREE.MeshStandardMaterial({ color: 0x2ee6ff, metalness: 0.4, roughness: 0.35, emissive: 0x0a3040, emissiveIntensity: 0.4 });
+    this.bodyMat = new THREE.MeshStandardMaterial({ color: 0x4b7bff, metalness: 0.22, roughness: 0.48, emissive: 0x101830, emissiveIntensity: 0.14 });
+    this.eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.55 });
   }
 
   _allocHist(x, z) {
@@ -110,7 +102,7 @@ export class Snake {
       const cross = hx * this.desired.z - hz * this.desired.x;
       const dot = hx * this.desired.x + hz * this.desired.z;
       let angle = Math.atan2(cross, dot);
-      const rate = TURN_RATE * (0.55 + 0.45 * mag);
+      const rate = TURN_RATE * (0.75 + 0.25 * mag);
       const maxTurn = rate * dt;
       if (angle > maxTurn) angle = maxTurn;
       else if (angle < -maxTurn) angle = -maxTurn;
@@ -180,17 +172,8 @@ export class Snake {
     }
   }
 
-  getHeadPosition() {
-    const h = this.segments[0];
-    return new THREE.Vector3(h.x, 0.34, h.z);
-  }
-
-  writeHead(out) {
-    const h = this.segments[0];
-    out.set(h.x, 0.34, h.z);
-    return out;
-  }
-
+  getHeadPosition() { const h = this.segments[0]; return new THREE.Vector3(h.x, 0.34, h.z); }
+  writeHead(out) { const h = this.segments[0]; out.set(h.x, 0.34, h.z); return out; }
   get direction() { return this.heading; }
 
   checkSelfCollision(threshold = 0.4) {
@@ -211,13 +194,8 @@ export class Snake {
   }
 
   reset(startLength = 6) {
-    this.length = startLength;
-    this.mass = startLength;
-    this.score = 0;
-    this.combo = 1;
-    this.comboTimer = 0;
-    this.headMat.emissive.setHex(0x0a3040);
-    this.headMat.emissiveIntensity = 0.4;
+    this.length = startLength; this.mass = startLength; this.score = 0; this.combo = 1; this.comboTimer = 0;
+    this.headMat.emissive.setHex(0x0a3040); this.headMat.emissiveIntensity = 0.4;
     this._spawn();
   }
 
