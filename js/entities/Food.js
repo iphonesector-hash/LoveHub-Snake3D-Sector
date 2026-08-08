@@ -1,75 +1,57 @@
 /**
- * Food / crystals — arena collectibles
+ * Food / crystals — collectibles for growth loop
  */
 
 import * as THREE from 'three';
 
-const COLORS = [0x30d158, 0x00d4ff, 0xff9f0a, 0xbf5af2, 0xff375f];
+const COLORS = [0x3dffb5, 0xffd24a, 0xff6b9d, 0x6bc5ff, 0xc79bff];
 
 export class Food {
-  constructor(scene, position, type = 'orb') {
+  constructor(scene, x, z, type = 'orb') {
     this.scene = scene;
     this.alive = true;
-    this.type = type;
     this.value = type === 'crystal' ? 3 : 1;
     this.growAmount = type === 'crystal' ? 2 : 1;
-    this._t = Math.random() * 10;
-
+    this.type = type;
+    this._t = Math.random() * Math.PI * 2;
     const color = COLORS[(Math.random() * COLORS.length) | 0];
-    const size = type === 'crystal' ? 0.28 : 0.18;
-    const geo =
-      type === 'crystal'
-        ? new THREE.OctahedronGeometry(size, 0)
-        : new THREE.SphereGeometry(size, 10, 8);
-
-    this.mat = new THREE.MeshStandardMaterial({
-      color,
-      metalness: 0.3,
-      roughness: 0.35,
-      emissive: color,
-      emissiveIntensity: 0.45,
-    });
+    const size = type === 'crystal' ? 0.32 : 0.2;
+    const geo = type === 'crystal' ? new THREE.OctahedronGeometry(size, 0) : new THREE.SphereGeometry(size, 12, 10);
+    this.mat = new THREE.MeshStandardMaterial({ color, metalness: 0.35, roughness: 0.3, emissive: color, emissiveIntensity: 0.45 });
     this.mesh = new THREE.Mesh(geo, this.mat);
-    this.mesh.position.copy(position);
-    this.mesh.position.y = 0.28;
+    this.mesh.position.set(x, 0.35, z);
     this.mesh.castShadow = true;
     scene.add(this.mesh);
-    this.baseY = 0.28;
+    this._baseY = 0.35;
+    this._x = x;
+    this._z = z;
   }
-
-  getPosition() {
-    return this.mesh.position;
-  }
-
+  getPosition() { return this.mesh.position; }
   update(dt, time) {
     if (!this.alive) return;
     this._t += dt;
-    this.mesh.position.y = this.baseY + Math.sin(this._t * 3) * 0.08;
-    this.mesh.rotation.y += dt * 1.5;
+    this.mesh.position.y = this._baseY + Math.sin(time * 2.5 + this._t) * 0.12;
+    this.mesh.rotation.y += dt * 1.4;
+    if (this.type === 'crystal') this.mesh.rotation.x += dt * 0.8;
   }
-
   collect() {
     this.alive = false;
     this.scene.remove(this.mesh);
     this.mesh.geometry?.dispose();
     this.mat?.dispose();
   }
-
-  dispose() {
-    if (this.alive) this.collect();
-  }
+  dispose() { if (this.alive) this.collect(); }
 }
 
-export function spawnFood(scene, bounds = 24, existing = []) {
-  let tries = 0;
-  let pos;
+export function spawnFood(scene, bounds = 36, existing = []) {
+  let x, z, tries = 0;
   do {
     const a = Math.random() * Math.PI * 2;
-    const r = 3 + Math.random() * (bounds - 4);
-    pos = new THREE.Vector3(Math.cos(a) * r, 0.28, Math.sin(a) * r);
+    const r = 4 + Math.random() * (bounds - 6);
+    x = Math.cos(a) * r;
+    z = Math.sin(a) * r;
     tries++;
-  } while (tries < 20 && existing.some((f) => f.alive && f.getPosition().distanceTo(pos) < 1.5));
-
-  const type = Math.random() < 0.18 ? 'crystal' : 'orb';
-  return new Food(scene, pos, type);
+  } while (tries < 12 && existing.some((f) => f.alive && Math.hypot(f._x - x, f._z - z) < 2.2));
+  const type = Math.random() < 0.12 ? 'crystal' : 'orb';
+  return new Food(scene, x, z, type);
 }
