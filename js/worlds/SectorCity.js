@@ -15,8 +15,11 @@ export class SectorCity {
 
   _build() {
     const size = this.bounds * 2;
+
     const groundGeo = new THREE.CircleGeometry(this.bounds + 2, 64);
-    const groundMat = new THREE.MeshStandardMaterial({ color: 0x121a28, metalness: 0.15, roughness: 0.85 });
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x121a28, metalness: 0.15, roughness: 0.85,
+    });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -24,8 +27,8 @@ export class SectorCity {
 
     const grid = new THREE.GridHelper(size, 42, 0x1e3a5f, 0x162033);
     grid.position.y = 0.02;
-    grid.material.opacity = 0.45;
-    grid.material.transparent = true;
+    const mats = Array.isArray(grid.material) ? grid.material : [grid.material];
+    mats.forEach((m) => { m.opacity = 0.45; m.transparent = true; });
     this.group.add(grid);
 
     const ringGeo = new THREE.RingGeometry(this.bounds - 0.6, this.bounds - 0.15, 96);
@@ -88,6 +91,7 @@ export class SectorCity {
       d.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r);
       this.group.add(d);
     }
+
     this._t = 0;
   }
 
