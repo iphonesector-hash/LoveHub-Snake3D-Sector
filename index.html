@@ -4,36 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0a0a12">
+  <meta name="theme-color" content="#0c1018">
   <title>LoveHub Snake 3D — Sector Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style id="boot-critical">
     .hidden { display: none !important; }
-    body { margin: 0; background: #0a0a12; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
-    .boost-btn {
-      position: absolute; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); right: 20px;
-      z-index: 6; width: 72px; height: 72px; border-radius: 50%;
-      border: 2px solid rgba(255,170,68,.45); background: rgba(255,140,40,.2);
-      color: #ffd7a0; font-weight: 700; font-size: 11px; letter-spacing: .06em;
-      touch-action: none; box-shadow: 0 4px 18px rgba(0,0,0,.35);
-    }
-    .boost-btn.active, .boost-btn:active {
-      background: rgba(255,140,40,.55); border-color: rgba(255,200,100,.8); color: #fff;
-    }
-    .boost-energy {
-      position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 28px;
-      z-index: 6; width: 56px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden;
-    }
-    .boost-energy #boost-energy-fill {
-      height: 100%; width: 100%; background: linear-gradient(90deg,#ff8c28,#ffd060);
-      transform-origin: left center;
-    }
-    .joystick-zone {
-      left: 20px !important; transform: none !important;
-    }
+    body { margin: 0; background: #0c1018; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; touch-action: none; }
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@03b244867136cbe93dcef27b95afb2c9bcc2bc87/css/game.css">
+  <link rel="stylesheet" href="css/game.css">
 </head>
 <body>
   <div id="game-root">
@@ -45,15 +24,20 @@
           <span class="label" data-i18n="score">Score</span>
           <span id="score-value">0</span>
         </div>
+        <div class="hud-mass">
+          <span class="label">Len</span>
+          <span id="length-value">6</span>
+        </div>
         <div class="hud-combo hidden" id="combo-display">
           <span id="combo-value">x1</span>
         </div>
         <div class="hud-right">
+          <button id="btn-hand" class="hud-btn" type="button" title="Handedness">LH</button>
           <button id="btn-pause" class="hud-btn" aria-label="Pause">❚❚</button>
         </div>
       </div>
       <div class="hud-bottom">
-        <div id="objective" class="objective" data-i18n="objective_collect">Collect food</div>
+        <div id="objective" class="objective" data-i18n="objective_collect">Collect orbs · Hold BOOST</div>
       </div>
     </div>
 
@@ -65,14 +49,11 @@
           <h1 class="game-title">SNAKE 3D</h1>
           <p class="game-subtitle" data-i18n="subtitle">LoveHub Edition</p>
         </div>
-
         <div class="menu-buttons">
           <button id="btn-play" class="btn btn-primary" data-i18n="play">PLAY</button>
-          <button id="btn-worlds" class="btn btn-secondary" data-i18n="worlds">WORLDS</button>
-          <button id="btn-customize" class="btn btn-secondary" data-i18n="customize">CUSTOMIZE</button>
+          <button id="btn-worlds" class="btn btn-secondary" data-i18n="worlds">ARENA</button>
           <button id="btn-settings" class="btn btn-ghost" data-i18n="settings">SETTINGS</button>
         </div>
-
         <div class="menu-stats">
           <div class="stat">
             <span class="stat-value" id="best-score">0</span>
@@ -87,7 +68,6 @@
             <span class="stat-label" data-i18n="coins">Coins</span>
           </div>
         </div>
-
         <div class="lang-switch">
           <button id="btn-lang-en" class="lang-btn active">EN</button>
           <button id="btn-lang-fa" class="lang-btn">فا</button>
@@ -123,16 +103,16 @@
       <div class="loading-content">
         <div class="loading-snake"></div>
         <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
-        <p id="loading-tip" data-i18n="loading">Loading Sector City...</p>
+        <p id="loading-tip" data-i18n="loading">Loading Sector Arena...</p>
       </div>
     </div>
 
-    <div id="joystick-zone" class="joystick-zone hidden">
+    <div id="joystick-zone" class="joystick-zone hand-left hidden">
       <div id="joystick-base" class="joystick-base">
         <div id="joystick-knob" class="joystick-knob"></div>
       </div>
     </div>
-    <button id="btn-boost" class="boost-btn hidden" type="button" aria-label="Boost">BOOST</button>
+    <button id="btn-boost" class="boost-btn hand-left hidden" type="button" aria-label="Boost">BOOST</button>
     <div id="boost-energy" class="boost-energy hidden"><div id="boost-energy-fill"></div></div>
   </div>
 
@@ -144,6 +124,6 @@
     }
   }
   </script>
-  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@03b244867136cbe93dcef27b95afb2c9bcc2bc87/js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
