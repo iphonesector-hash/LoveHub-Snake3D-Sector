@@ -11,8 +11,29 @@
   <style id="boot-critical">
     .hidden { display: none !important; }
     body { margin: 0; background: #0a0a12; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; }
+    .boost-btn {
+      position: absolute; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); right: 20px;
+      z-index: 6; width: 72px; height: 72px; border-radius: 50%;
+      border: 2px solid rgba(255,170,68,.45); background: rgba(255,140,40,.2);
+      color: #ffd7a0; font-weight: 700; font-size: 11px; letter-spacing: .06em;
+      touch-action: none; box-shadow: 0 4px 18px rgba(0,0,0,.35);
+    }
+    .boost-btn.active, .boost-btn:active {
+      background: rgba(255,140,40,.55); border-color: rgba(255,200,100,.8); color: #fff;
+    }
+    .boost-energy {
+      position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 28px;
+      z-index: 6; width: 56px; height: 5px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden;
+    }
+    .boost-energy #boost-energy-fill {
+      height: 100%; width: 100%; background: linear-gradient(90deg,#ff8c28,#ffd060);
+      transform-origin: left center;
+    }
+    .joystick-zone {
+      left: 20px !important; transform: none !important;
+    }
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@main/css/game.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@03b244867136cbe93dcef27b95afb2c9bcc2bc87/css/game.css">
 </head>
 <body>
   <div id="game-root">
@@ -123,6 +144,6 @@
     }
   }
   </script>
-  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@main/js/main.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@03b244867136cbe93dcef27b95afb2c9bcc2bc87/js/main.js"></script>
 </body>
 </html>
