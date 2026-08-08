@@ -1,258 +1,202 @@
 /**
- * 3D Snake — smooth body following, acceleration, controlled turns
+ * Snake — Snake.io-style continuous movement + path body
  */
 
 import * as THREE from 'three';
 
-const SEGMENT_SPACING = 0.55;
-const BASE_SPEED = 6.2;
-const MIN_SPEED = 2.4;
-const BOOST_MULTIPLIER = 1.75;
-const ACCEL = 14;
-const DECEL = 11;
-const TURN_SPEED = 9.5;
-const TURN_SPEED_BOOST = 7.2;
-const HEAD_RADIUS = 0.32;
-const BODY_RADIUS = 0.28;
-const BOOST_ENERGY_MAX = 1;
-const BOOST_DRAIN = 0.35;
-const BOOST_REGEN = 0.22;
+const SEG_SPACE = 0.48;
+const BASE_SPEED = 7.2;
+const BOOST_SPEED = 13.5;
+const ACCEL = 22;
+const DECEL = 16;
+const TURN_RATE = 11.5;
+const TURN_BOOST = 9.0;
+const HEAD_R = 0.34;
+const BODY_R = 0.29;
+const ENERGY_MAX = 1;
+const ENERGY_DRAIN = 0.28;
+const ENERGY_REGEN = 0.18;
+const HIST_CAP = 4000;
 
 export class Snake {
   constructor(scene, options = {}) {
     this.scene = scene;
     this.segments = [];
-    this.history = [];
-    this.historySpacing = 0.08;
-    this.maxHistory = 2000;
-
-    this.direction = new THREE.Vector3(0, 0, -1);
-    this.targetDir = new THREE.Vector3(0, 0, -1);
+    this._hist = [];
+    this._histLen = 0;
+    this._histMax = HIST_CAP;
+    this.heading = new THREE.Vector3(0, 0, -1);
+    this.desired = new THREE.Vector3(0, 0, -1);
     this._tmp = new THREE.Vector3();
     this._move = new THREE.Vector3();
-
     this.speed = BASE_SPEED;
     this.targetSpeed = BASE_SPEED;
     this.alive = true;
-    this.length = options.startLength || 5;
+    this.length = options.startLength || 6;
     this.score = 0;
     this.combo = 1;
     this.comboTimer = 0;
-
-    this.boostEnergy = BOOST_ENERGY_MAX;
+    this.energy = ENERGY_MAX;
     this.boosting = false;
-
+    this.mass = this.length;
     this.group = new THREE.Group();
     scene.add(this.group);
-
-    this._createMaterials();
+    this._mats();
     this._spawn();
   }
 
-  _createMaterials() {
+  _mats() {
     this.headMat = new THREE.MeshStandardMaterial({
-      color: 0x00d4ff,
-      metalness: 0.4,
-      roughness: 0.35,
-      emissive: 0x003344,
-      emissiveIntensity: 0.3,
+      color: 0x00e5ff, metalness: 0.35, roughness: 0.4,
+      emissive: 0x004455, emissiveIntensity: 0.35,
     });
     this.bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x5e5ce6,
-      metalness: 0.25,
-      roughness: 0.45,
-      emissive: 0x1a1a40,
-      emissiveIntensity: 0.15,
+      color: 0x5b8def, metalness: 0.2, roughness: 0.5,
+      emissive: 0x1a2040, emissiveIntensity: 0.12,
     });
     this.eyeMat = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xffffff,
-      emissiveIntensity: 0.4,
+      color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5,
     });
   }
 
   _spawn() {
-    while (this.group.children.length) {
-      this.group.remove(this.group.children[0]);
-    }
+    while (this.group.children.length) this.group.remove(this.group.children[0]);
     this.segments = [];
-    this.history = [];
-
-    const start = new THREE.Vector3(0, 0.35, 4);
-
+    this._hist = [];
+    this._histLen = 0;
+    const start = new THREE.Vector3(0, 0.32, 6);
     for (let i = 0; i < this.length; i++) {
-      const pos = start.clone().add(new THREE.Vector3(0, 0, i * SEGMENT_SPACING));
-      const isHead = i === 0;
-      const mesh = this._createSegmentMesh(isHead);
+      const pos = start.clone().add(new THREE.Vector3(0, 0, i * SEG_SPACE));
+      const mesh = this._segMesh(i === 0);
       mesh.position.copy(pos);
       this.group.add(mesh);
-      this.segments.push({ position: pos.clone(), mesh });
-      this.history.push(pos.clone());
+      this.segments.push({ pos: pos.clone(), mesh });
+      this._pushHist(pos);
     }
-
-    this.direction.set(0, 0, -1);
-    this.targetDir.set(0, 0, -1);
+    this.heading.set(0, 0, -1);
+    this.desired.set(0, 0, -1);
     this.speed = BASE_SPEED;
     this.targetSpeed = BASE_SPEED;
-    this.boostEnergy = BOOST_ENERGY_MAX;
+    this.energy = ENERGY_MAX;
     this.boosting = false;
     this.alive = true;
+    this.mass = this.length;
   }
 
-  _createSegmentMesh(isHead) {
-    const geo = new THREE.SphereGeometry(isHead ? HEAD_RADIUS : BODY_RADIUS, 16, 12);
-    const mat = isHead ? this.headMat : this.bodyMat;
-    const mesh = new THREE.Mesh(geo, mat);
+  _segMesh(isHead) {
+    const geo = new THREE.SphereGeometry(isHead ? HEAD_R : BODY_R, 14, 12);
+    const mesh = new THREE.Mesh(geo, isHead ? this.headMat : this.bodyMat);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-
     if (isHead) {
-      const eyeGeo = new THREE.SphereGeometry(0.07, 8, 6);
-      const left = new THREE.Mesh(eyeGeo, this.eyeMat);
-      const right = new THREE.Mesh(eyeGeo, this.eyeMat);
-      left.position.set(-0.14, 0.12, -0.22);
-      right.position.set(0.14, 0.12, -0.22);
-      mesh.add(left);
-      mesh.add(right);
-
-      const light = new THREE.PointLight(0x00d4ff, 0.6, 4);
-      light.position.set(0, 0.2, 0);
-      mesh.add(light);
-      this._headLight = light;
+      const eg = new THREE.SphereGeometry(0.07, 8, 6);
+      const L = new THREE.Mesh(eg, this.eyeMat);
+      const R = new THREE.Mesh(eg, this.eyeMat);
+      L.position.set(-0.13, 0.1, -0.24);
+      R.position.set(0.13, 0.1, -0.24);
+      mesh.add(L, R);
+      this._glow = new THREE.PointLight(0x00e5ff, 0.7, 5);
+      this._glow.position.set(0, 0.15, 0);
+      mesh.add(this._glow);
     }
-
     return mesh;
   }
 
-  setTargetDirection(x, z, allowReverse = true) {
-    if (!this.alive) return;
-    const len = Math.hypot(x, z) || 1;
-    const nx = x / len;
-    const nz = z / len;
-
-    if (!allowReverse) {
-      const dot = this.direction.x * nx + this.direction.z * nz;
-      if (dot < -0.55) return;
-    }
-
-    this.targetDir.set(nx, 0, nz);
-  }
-
-  grow(amount = 1) {
-    for (let i = 0; i < amount; i++) {
-      const last = this.segments[this.segments.length - 1];
-      const pos = last.position.clone();
-      const mesh = this._createSegmentMesh(false);
-      mesh.position.copy(pos);
-      this.group.add(mesh);
-      this.segments.push({ position: pos, mesh });
-      this.length++;
-    }
-  }
-
-  update(dt, inputDir, boostHeld, magnitude = 1, analog = false) {
-    if (!this.alive) return;
-
-    const ilen = Math.hypot(inputDir.x, inputDir.z) || 1;
-    const ix = inputDir.x / ilen;
-    const iz = inputDir.z / ilen;
-
-    if (!analog) {
-      const dot = this.direction.x * ix + this.direction.z * iz;
-      if (dot >= -0.55) {
-        this.targetDir.set(ix, 0, iz);
-      }
+  _pushHist(v3) {
+    if (this._histLen < this._histMax) {
+      this._hist.push(v3.clone());
+      this._histLen++;
     } else {
-      this.targetDir.set(ix, 0, iz);
+      const last = this._hist.pop();
+      last.copy(v3);
+      this._hist.unshift(last);
     }
+  }
 
-    const cx = this.direction.x;
-    const cz = this.direction.z;
-    const tx = this.targetDir.x;
-    const tz = this.targetDir.z;
-    const cross = cx * tz - cz * tx;
-    const dot = cx * tx + cz * tz;
-    let angle = Math.atan2(cross, dot);
+  grow(n = 1) {
+    for (let i = 0; i < n; i++) {
+      const last = this.segments[this.segments.length - 1];
+      const mesh = this._segMesh(false);
+      mesh.position.copy(last.pos);
+      this.group.add(mesh);
+      this.segments.push({ pos: last.pos.clone(), mesh });
+      this.length++;
+      this.mass = this.length;
+    }
+  }
 
-    const turnRate = this.boosting ? TURN_SPEED_BOOST : TURN_SPEED;
-    const turnScale = analog ? 0.65 + 0.35 * magnitude : 1;
-    const maxTurn = turnRate * turnScale * dt;
-    if (angle > maxTurn) angle = maxTurn;
-    else if (angle < -maxTurn) angle = -maxTurn;
+  update(dt, desired, boostHeld, stickMag = 0) {
+    if (!this.alive) return;
+    const dl = Math.hypot(desired.x, desired.z) || 1;
+    this.desired.set(desired.x / dl, 0, desired.z / dl);
 
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    this.direction.x = cx * cos - cz * sin;
-    this.direction.z = cx * sin + cz * cos;
-    const dlen = Math.hypot(this.direction.x, this.direction.z) || 1;
-    this.direction.x /= dlen;
-    this.direction.z /= dlen;
-    this.direction.y = 0;
+    const hx = this.heading.x, hz = this.heading.z;
+    const dx = this.desired.x, dz = this.desired.z;
+    const cross = hx * dz - hz * dx;
+    const dot = hx * dx + hz * dz;
+    let ang = Math.atan2(cross, dot);
+    const rate = (this.boosting ? TURN_BOOST : TURN_RATE) * (0.75 + 0.5 * Math.min(1, stickMag || 1));
+    const maxA = rate * dt;
+    if (ang > maxA) ang = maxA;
+    else if (ang < -maxA) ang = -maxA;
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    this.heading.x = hx * cos - hz * sin;
+    this.heading.z = hx * sin + hz * cos;
+    const hl = Math.hypot(this.heading.x, this.heading.z) || 1;
+    this.heading.x /= hl;
+    this.heading.z /= hl;
+    this.heading.y = 0;
 
-    if (boostHeld && this.boostEnergy > 0.02) {
+    if (boostHeld && this.energy > 0.02) {
       this.boosting = true;
-      this.boostEnergy = Math.max(0, this.boostEnergy - BOOST_DRAIN * dt);
-      if (this.boostEnergy <= 0.01) this.boosting = false;
+      this.energy = Math.max(0, this.energy - ENERGY_DRAIN * dt);
+      if (this.energy <= 0.01) this.boosting = false;
     } else {
       this.boosting = false;
-      this.boostEnergy = Math.min(BOOST_ENERGY_MAX, this.boostEnergy + BOOST_REGEN * dt);
+      this.energy = Math.min(ENERGY_MAX, this.energy + ENERGY_REGEN * dt);
     }
 
-    const mag = Math.max(0, Math.min(1, magnitude));
-    let cruise = MIN_SPEED + (BASE_SPEED - MIN_SPEED) * (analog ? Math.max(mag, 0.35) : 1);
-    if (!analog) cruise = BASE_SPEED;
-    else if (mag < 0.02) cruise = this.speed;
-
-    this.targetSpeed = cruise * (this.boosting ? BOOST_MULTIPLIER : 1);
-
-    if (this.speed < this.targetSpeed) {
-      this.speed = Math.min(this.targetSpeed, this.speed + ACCEL * dt);
-    } else if (this.speed > this.targetSpeed) {
-      this.speed = Math.max(this.targetSpeed, this.speed - DECEL * dt);
-    }
+    this.targetSpeed = this.boosting ? BOOST_SPEED : BASE_SPEED;
+    if (this.speed < this.targetSpeed) this.speed = Math.min(this.targetSpeed, this.speed + ACCEL * dt);
+    else if (this.speed > this.targetSpeed) this.speed = Math.max(this.targetSpeed, this.speed - DECEL * dt);
 
     const head = this.segments[0];
-    this._move.set(this.direction.x, 0, this.direction.z).multiplyScalar(this.speed * dt);
-    head.position.add(this._move);
+    this._move.set(this.heading.x, 0, this.heading.z).multiplyScalar(this.speed * dt);
+    head.pos.add(this._move);
 
-    this.history.unshift(head.position.clone());
-    if (this.history.length > this.maxHistory) {
-      this.history.pop();
+    if (this._histLen === 0 || head.pos.distanceToSquared(this._hist[0]) > 0.0025) {
+      this._pushHist(head.pos);
     }
 
-    let distAccum = 0;
-    let histIdx = 0;
+    let distAccum = 0, hi = 0;
     for (let i = 1; i < this.segments.length; i++) {
-      const targetDist = i * SEGMENT_SPACING;
-      while (histIdx < this.history.length - 1) {
-        const a = this.history[histIdx];
-        const b = this.history[histIdx + 1];
-        const segLen = a.distanceTo(b);
-        if (distAccum + segLen >= targetDist) {
-          const t = (targetDist - distAccum) / (segLen || 1);
-          this.segments[i].position.lerpVectors(a, b, t);
+      const need = i * SEG_SPACE;
+      while (hi < this._histLen - 1) {
+        const a = this._hist[hi], b = this._hist[hi + 1];
+        const sl = a.distanceTo(b);
+        if (distAccum + sl >= need) {
+          const t = (need - distAccum) / (sl || 1);
+          this.segments[i].pos.lerpVectors(a, b, t);
           break;
         }
-        distAccum += segLen;
-        histIdx++;
+        distAccum += sl;
+        hi++;
       }
-      if (histIdx >= this.history.length - 1) {
-        this.segments[i].position.copy(this.history[this.history.length - 1] || head.position);
-      }
+      if (hi >= this._histLen - 1) this.segments[i].pos.copy(this._hist[this._histLen - 1] || head.pos);
     }
 
     for (let i = 0; i < this.segments.length; i++) {
       const s = this.segments[i];
-      s.mesh.position.copy(s.position);
+      s.mesh.position.copy(s.pos);
       if (i === 0) {
-        this._tmp.copy(head.position).add(this.direction);
+        this._tmp.copy(s.pos).add(this.heading);
         s.mesh.lookAt(this._tmp);
-        if (this._headLight) {
-          this._headLight.intensity = this.boosting ? 1.1 : 0.6;
-          this._headLight.color.setHex(this.boosting ? 0xffaa44 : 0x00d4ff);
+        if (this._glow) {
+          this._glow.intensity = this.boosting ? 1.4 : 0.7;
+          this._glow.color.setHex(this.boosting ? 0xffaa33 : 0x00e5ff);
         }
-        this.headMat.emissiveIntensity = this.boosting ? 0.55 : 0.3;
-        this.headMat.emissive.setHex(this.boosting ? 0x553300 : 0x003344);
+        this.headMat.emissiveIntensity = this.boosting ? 0.7 : 0.35;
+        this.headMat.emissive.setHex(this.boosting ? 0x664400 : 0x004455);
       }
     }
 
@@ -262,25 +206,14 @@ export class Snake {
     }
   }
 
-  getHeadPosition() {
-    return this.segments[0]?.position.clone() || new THREE.Vector3();
-  }
+  getHeadPosition() { return this.segments[0]?.pos.clone() || new THREE.Vector3(); }
+  getBoostEnergy() { return this.energy; }
 
-  getHeadMesh() {
-    return this.segments[0]?.mesh;
-  }
-
-  getBoostEnergy() {
-    return this.boostEnergy;
-  }
-
-  checkSelfCollision(threshold = 0.35) {
-    if (this.segments.length < 8) return false;
-    const head = this.segments[0].position;
-    for (let i = 6; i < this.segments.length; i++) {
-      if (head.distanceTo(this.segments[i].position) < threshold) {
-        return true;
-      }
+  checkSelfCollision(threshold = 0.38) {
+    if (this.segments.length < 10) return false;
+    const head = this.segments[0].pos;
+    for (let i = 8; i < this.segments.length; i++) {
+      if (head.distanceToSquared(this.segments[i].pos) < threshold * threshold) return true;
     }
     return false;
   }
@@ -288,32 +221,30 @@ export class Snake {
   die() {
     this.alive = false;
     this.boosting = false;
-    this.headMat.emissive.setHex(0xff0000);
-    this.headMat.emissiveIntensity = 0.8;
+    this.headMat.emissive.setHex(0xff2222);
+    this.headMat.emissiveIntensity = 0.9;
   }
 
-  reset(startLength = 5) {
-    this.length = startLength;
+  reset(n = 6) {
+    this.length = n;
     this.score = 0;
     this.combo = 1;
     this.comboTimer = 0;
-    this.headMat.emissive.setHex(0x003344);
-    this.headMat.emissiveIntensity = 0.3;
+    this.headMat.emissive.setHex(0x004455);
+    this.headMat.emissiveIntensity = 0.35;
     this._spawn();
   }
 
-  addScore(points) {
-    const gained = Math.floor(points * this.combo);
-    this.score += gained;
-    this.combo = Math.min(10, this.combo + 0.5);
-    this.comboTimer = 2.5;
-    return gained;
+  addScore(pts) {
+    const g = Math.floor(pts * this.combo);
+    this.score += g;
+    this.combo = Math.min(12, this.combo + 0.4);
+    this.comboTimer = 2.2;
+    return g;
   }
 
   dispose() {
     this.scene.remove(this.group);
-    this.segments.forEach((s) => {
-      s.mesh.geometry?.dispose();
-    });
+    this.segments.forEach((s) => s.mesh.geometry?.dispose());
   }
 }
