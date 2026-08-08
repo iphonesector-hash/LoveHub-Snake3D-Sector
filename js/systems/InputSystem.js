@@ -1,10 +1,9 @@
 /**
- * InputSystem — Snake.io-style analog joystick + desktop
- * Primary control: 360° analog stick. Keyboard mirrors same continuous heading model.
+ * InputSystem — Snake.io-style 360° analog joystick (primary) + keyboard
  */
 
-const DEADZONE = 0.08;
-const JOY_RADIUS = 58;
+const DEADZONE = 0.1;
+const JOY_RADIUS = 60;
 const JOY_SIDE_KEY = 'snake3d_joy_side';
 
 export class InputSystem {
@@ -15,7 +14,7 @@ export class InputSystem {
     this.magnitude = 0;
     this.boostHeld = false;
     this.analogActive = false;
-    this.joystick = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, radius: JOY_RADIUS };
+    this.joystick = { active: false, id: null, ox: 0, oy: 0, radius: JOY_RADIUS };
     this.side = localStorage.getItem(JOY_SIDE_KEY) || 'left';
     this._keys = new Set();
     this._bind();
@@ -59,10 +58,9 @@ export class InputSystem {
 
   _applySide() {
     if (!this.zone || !this.boostBtn) return;
-    this.zone.classList.toggle('side-right', this.side === 'right');
-    this.zone.classList.toggle('side-left', this.side !== 'right');
-    this.boostBtn.classList.toggle('side-left', this.side === 'right');
-    this.boostBtn.classList.toggle('side-right', this.side !== 'right');
+    const right = this.side === 'right';
+    this.zone.classList.toggle('side-right', right);
+    this.boostBtn.classList.toggle('side-left', right);
   }
 
   _blockScroll = (e) => {
@@ -82,22 +80,22 @@ export class InputSystem {
   };
 
   _onKeyUp = (e) => {
-    const c = e.code;
-    this._keys.delete(c);
+    this._keys.delete(e.code);
     this._syncKeys();
-    if (c === 'Space' || c === 'ShiftLeft' || c === 'ShiftRight') {
+    if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
       this.boostHeld = false;
       this.boostBtn?.classList.remove('active');
     }
   };
 
   _syncKeys() {
+    if (this.analogActive) return;
     let x = 0, z = 0;
     if (this._keys.has('ArrowUp') || this._keys.has('KeyW')) z -= 1;
     if (this._keys.has('ArrowDown') || this._keys.has('KeyS')) z += 1;
     if (this._keys.has('ArrowLeft') || this._keys.has('KeyA')) x -= 1;
     if (this._keys.has('ArrowRight') || this._keys.has('KeyD')) x += 1;
-    if (x === 0 && z === 0) { if (!this.analogActive) this.magnitude = 0; return; }
+    if (x === 0 && z === 0) { this.magnitude = 0; return; }
     const len = Math.hypot(x, z) || 1;
     this.heading = { x: x / len, z: z / len };
     this.magnitude = 1;
@@ -130,8 +128,6 @@ export class InputSystem {
     e.preventDefault();
     this.joystick.active = false;
     this.joystick.id = null;
-    this.joystick.dx = 0;
-    this.joystick.dy = 0;
     this.analogActive = false;
     this.magnitude = 0;
     if (this.knob) {
@@ -146,8 +142,6 @@ export class InputSystem {
     const dist = Math.hypot(dx, dy);
     const max = this.joystick.radius;
     if (dist > max) { dx = (dx / dist) * max; dy = (dy / dist) * max; }
-    this.joystick.dx = dx;
-    this.joystick.dy = dy;
     if (this.knob) {
       this.knob.style.transform = `translate(calc(-50% + ${dx.toFixed(1)}px), calc(-50% + ${dy.toFixed(1)}px))`;
       this.knob.classList.toggle('active', dist > max * DEADZONE);
@@ -158,7 +152,7 @@ export class InputSystem {
     const mag = t * t * (3 - 2 * t);
     const len = Math.hypot(dx, dy) || 1;
     this.heading = { x: dx / len, z: dy / len };
-    this.magnitude = mag;
+    this.magnitude = Math.max(0.35, mag);
     this.analogActive = true;
   }
 
