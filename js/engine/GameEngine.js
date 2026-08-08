@@ -69,10 +69,13 @@ export class GameEngine {
 
   _initCamera() {
     const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
-    this.camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 120);
-    this.camera.position.set(0, 12, 14);
+    this.camera = new THREE.PerspectiveCamera(52, aspect, 0.1, 120);
+    this.camera.position.set(0, 11, 13);
     this.camera.lookAt(0, 0, 0);
-    this.cameraLerp = 4.5;
+    this.cameraLerp = 5.2;
+    this.cameraLookLerp = 6.5;
+    this._camPos = new THREE.Vector3(0, 11, 13);
+    this._lookTarget = new THREE.Vector3(0, 0.4, -3);
   }
 
   _initLights() {
@@ -173,6 +176,15 @@ export class GameEngine {
     if (this.world) this.world.update(dt, this.time);
     this.foods.forEach((f) => f.update(dt, this.time));
 
+    if (this.snake && this.state === GameState.PLAYING) {
+      const fill = document.getElementById('boost-energy-fill');
+      const bar = document.getElementById('boost-energy');
+      if (fill && bar) {
+        fill.style.transform = `scaleX(${this.snake.getBoostEnergy().toFixed(3)})`;
+        bar.classList.toggle('hidden', !this._isTouchDevice());
+      }
+    }
+
     this.renderer.render(this.scene, this.camera);
   };
 
@@ -180,9 +192,11 @@ export class GameEngine {
     this.input.update(dt);
     const dir = this.input.getDirection();
     const boosting = this.input.isBoosting();
+    const magnitude = this.input.getMagnitude();
+    const analog = this.input.isAnalog();
 
-    this.snake.setTargetDirection(dir.x, dir.z);
-    this.snake.update(dt, dir, boosting);
+    this.snake.setTargetDirection(dir.x, dir.z, analog);
+    this.snake.update(dt, dir, boosting, magnitude, analog);
 
     const headPos = this.snake.getHeadPosition();
     if (this.world.checkCollision(headPos, 0.3)) {
@@ -216,17 +230,25 @@ export class GameEngine {
     const head = this.snake.getHeadPosition();
     const dir = this.snake.direction;
 
-    const desired = head.clone()
-      .add(new THREE.Vector3(-dir.x * 8, 0, -dir.z * 8))
-      .add(new THREE.Vector3(0, 8.5, 0));
+    const back = 7.5;
+    const height = 8.2;
+    const desired = this._camPos || this.camera.position.clone();
+    desired.set(
+      head.x - dir.x * back,
+      head.y + height,
+      head.z - dir.z * back
+    );
+    desired.x += dir.z * 0.4;
+    desired.z -= dir.x * 0.4;
 
-    this.camera.position.lerp(desired, 1 - Math.exp(-this.cameraLerp * dt));
+    const k = 1 - Math.exp(-this.cameraLerp * dt);
+    this.camera.position.lerp(desired, k);
+    this._camPos = this.camera.position;
 
-    const lookAt = head.clone().add(dir.clone().multiplyScalar(3));
-    lookAt.y += 0.4;
-
+    const lookAt = head.clone().addScaledVector(dir, 4.2);
+    lookAt.y += 0.35;
     if (!this._lookTarget) this._lookTarget = lookAt.clone();
-    this._lookTarget.lerp(lookAt, 1 - Math.exp(-5 * dt));
+    this._lookTarget.lerp(lookAt, 1 - Math.exp(-this.cameraLookLerp * dt));
     this.camera.lookAt(this._lookTarget);
   }
 
