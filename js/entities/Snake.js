@@ -1,15 +1,22 @@
 /**
- * 3D Snake — smooth body following, real meshes
+ * 3D Snake — smooth body following, acceleration, controlled turns
  */
 
 import * as THREE from 'three';
 
 const SEGMENT_SPACING = 0.55;
-const BASE_SPEED = 6.5;
-const BOOST_MULTIPLIER = 1.7;
-const TURN_SPEED = 8.0;
+const BASE_SPEED = 6.2;
+const MIN_SPEED = 2.4;
+const BOOST_MULTIPLIER = 1.75;
+const ACCEL = 14;
+const DECEL = 11;
+const TURN_SPEED = 9.5;
+const TURN_SPEED_BOOST = 7.2;
 const HEAD_RADIUS = 0.32;
 const BODY_RADIUS = 0.28;
+const BOOST_ENERGY_MAX = 1;
+const BOOST_DRAIN = 0.35;
+const BOOST_REGEN = 0.22;
 
 export class Snake {
   constructor(scene, options = {}) {
@@ -21,12 +28,19 @@ export class Snake {
 
     this.direction = new THREE.Vector3(0, 0, -1);
     this.targetDir = new THREE.Vector3(0, 0, -1);
+    this._tmp = new THREE.Vector3();
+    this._move = new THREE.Vector3();
+
     this.speed = BASE_SPEED;
+    this.targetSpeed = BASE_SPEED;
     this.alive = true;
     this.length = options.startLength || 5;
     this.score = 0;
     this.combo = 1;
     this.comboTimer = 0;
+
+    this.boostEnergy = BOOST_ENERGY_MAX;
+    this.boosting = false;
 
     this.group = new THREE.Group();
     scene.add(this.group);
@@ -78,6 +92,10 @@ export class Snake {
 
     this.direction.set(0, 0, -1);
     this.targetDir.set(0, 0, -1);
+    this.speed = BASE_SPEED;
+    this.targetSpeed = BASE_SPEED;
+    this.boostEnergy = BOOST_ENERGY_MAX;
+    this.boosting = false;
     this.alive = true;
   }
 
@@ -100,15 +118,24 @@ export class Snake {
       const light = new THREE.PointLight(0x00d4ff, 0.6, 4);
       light.position.set(0, 0.2, 0);
       mesh.add(light);
+      this._headLight = light;
     }
 
     return mesh;
   }
 
-  setTargetDirection(x, z) {
+  setTargetDirection(x, z, allowReverse = true) {
     if (!this.alive) return;
-    const len = Math.sqrt(x * x + z * z) || 1;
-    this.targetDir.set(x / len, 0, z / len);
+    const len = Math.hypot(x, z) || 1;
+    const nx = x / len;
+    const nz = z / len;
+
+    if (!allowReverse) {
+      const dot = this.direction.x * nx + this.direction.z * nz;
+      if (dot < -0.55) return;
+    }
+
+    this.targetDir.set(nx, 0, nz);
   }
 
   grow(amount = 1) {
@@ -123,30 +150,70 @@ export class Snake {
     }
   }
 
-  update(dt, inputDir, boosting) {
+  update(dt, inputDir, boostHeld, magnitude = 1, analog = false) {
     if (!this.alive) return;
 
-    this.targetDir.set(inputDir.x, 0, inputDir.z).normalize();
-    const current = this.direction.clone();
-    const target = this.targetDir;
+    const ilen = Math.hypot(inputDir.x, inputDir.z) || 1;
+    const ix = inputDir.x / ilen;
+    const iz = inputDir.z / ilen;
 
-    const cross = current.x * target.z - current.z * target.x;
-    const dot = current.x * target.x + current.z * target.z;
+    if (!analog) {
+      const dot = this.direction.x * ix + this.direction.z * iz;
+      if (dot >= -0.55) {
+        this.targetDir.set(ix, 0, iz);
+      }
+    } else {
+      this.targetDir.set(ix, 0, iz);
+    }
+
+    const cx = this.direction.x;
+    const cz = this.direction.z;
+    const tx = this.targetDir.x;
+    const tz = this.targetDir.z;
+    const cross = cx * tz - cz * tx;
+    const dot = cx * tx + cz * tz;
     let angle = Math.atan2(cross, dot);
-    const maxTurn = TURN_SPEED * dt;
-    angle = THREE.MathUtils.clamp(angle, -maxTurn, maxTurn);
+
+    const turnRate = this.boosting ? TURN_SPEED_BOOST : TURN_SPEED;
+    const turnScale = analog ? 0.65 + 0.35 * magnitude : 1;
+    const maxTurn = turnRate * turnScale * dt;
+    if (angle > maxTurn) angle = maxTurn;
+    else if (angle < -maxTurn) angle = -maxTurn;
 
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
-    this.direction.x = current.x * cos - current.z * sin;
-    this.direction.z = current.x * sin + current.z * cos;
-    this.direction.normalize();
+    this.direction.x = cx * cos - cz * sin;
+    this.direction.z = cx * sin + cz * cos;
+    const dlen = Math.hypot(this.direction.x, this.direction.z) || 1;
+    this.direction.x /= dlen;
+    this.direction.z /= dlen;
+    this.direction.y = 0;
 
-    this.speed = BASE_SPEED * (boosting ? BOOST_MULTIPLIER : 1);
+    if (boostHeld && this.boostEnergy > 0.02) {
+      this.boosting = true;
+      this.boostEnergy = Math.max(0, this.boostEnergy - BOOST_DRAIN * dt);
+      if (this.boostEnergy <= 0.01) this.boosting = false;
+    } else {
+      this.boosting = false;
+      this.boostEnergy = Math.min(BOOST_ENERGY_MAX, this.boostEnergy + BOOST_REGEN * dt);
+    }
+
+    const mag = Math.max(0, Math.min(1, magnitude));
+    let cruise = MIN_SPEED + (BASE_SPEED - MIN_SPEED) * (analog ? Math.max(mag, 0.35) : 1);
+    if (!analog) cruise = BASE_SPEED;
+    else if (mag < 0.02) cruise = this.speed;
+
+    this.targetSpeed = cruise * (this.boosting ? BOOST_MULTIPLIER : 1);
+
+    if (this.speed < this.targetSpeed) {
+      this.speed = Math.min(this.targetSpeed, this.speed + ACCEL * dt);
+    } else if (this.speed > this.targetSpeed) {
+      this.speed = Math.max(this.targetSpeed, this.speed - DECEL * dt);
+    }
 
     const head = this.segments[0];
-    const move = this.direction.clone().multiplyScalar(this.speed * dt);
-    head.position.add(move);
+    this._move.set(this.direction.x, 0, this.direction.z).multiplyScalar(this.speed * dt);
+    head.position.add(this._move);
 
     this.history.unshift(head.position.clone());
     if (this.history.length > this.maxHistory) {
@@ -178,8 +245,14 @@ export class Snake {
       const s = this.segments[i];
       s.mesh.position.copy(s.position);
       if (i === 0) {
-        const look = head.position.clone().add(this.direction);
-        s.mesh.lookAt(look);
+        this._tmp.copy(head.position).add(this.direction);
+        s.mesh.lookAt(this._tmp);
+        if (this._headLight) {
+          this._headLight.intensity = this.boosting ? 1.1 : 0.6;
+          this._headLight.color.setHex(this.boosting ? 0xffaa44 : 0x00d4ff);
+        }
+        this.headMat.emissiveIntensity = this.boosting ? 0.55 : 0.3;
+        this.headMat.emissive.setHex(this.boosting ? 0x553300 : 0x003344);
       }
     }
 
@@ -197,6 +270,10 @@ export class Snake {
     return this.segments[0]?.mesh;
   }
 
+  getBoostEnergy() {
+    return this.boostEnergy;
+  }
+
   checkSelfCollision(threshold = 0.35) {
     if (this.segments.length < 8) return false;
     const head = this.segments[0].position;
@@ -210,6 +287,7 @@ export class Snake {
 
   die() {
     this.alive = false;
+    this.boosting = false;
     this.headMat.emissive.setHex(0xff0000);
     this.headMat.emissiveIntensity = 0.8;
   }
