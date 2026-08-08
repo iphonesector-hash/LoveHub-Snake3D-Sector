@@ -1,5 +1,5 @@
 /**
- * GameEngine — core loop, rendering, state machine
+ * GameEngine — Snake.io-style loop, top-down camera, arena
  */
 
 import * as THREE from 'three';
@@ -24,7 +24,7 @@ export class GameEngine {
     this.clock = new THREE.Clock();
     this.time = 0;
     this.foods = [];
-    this.maxFood = 6;
+    this.maxFood = 48;
 
     this.onStateChange = options.onStateChange || (() => {});
     this.onScore = options.onScore || (() => {});
@@ -44,12 +44,15 @@ export class GameEngine {
 
     this._raf = null;
     this._running = false;
+    this._camPos = new THREE.Vector3(0, 22, 16);
+    this._look = new THREE.Vector3(0, 0, 0);
+    this._baseFov = 48;
+    this._targetFov = 48;
   }
 
   _initRenderer() {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: false,
       powerPreference: 'high-performance',
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -57,61 +60,59 @@ export class GameEngine {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.05;
     this.container.appendChild(this.renderer.domElement);
   }
 
   _initScene() {
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x07070f);
-    this.scene.fog = new THREE.FogExp2(0x07070f, 0.028);
+    this.scene.background = new THREE.Color(0x0c1018);
+    this.scene.fog = new THREE.FogExp2(0x0c1018, 0.018);
   }
 
   _initCamera() {
     const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
-    this.camera = new THREE.PerspectiveCamera(52, aspect, 0.1, 120);
-    this.camera.position.set(0, 11, 13);
+    this.camera = new THREE.PerspectiveCamera(48, aspect, 0.1, 150);
+    this.camera.position.set(0, 22, 16);
     this.camera.lookAt(0, 0, 0);
-    this.cameraLerp = 5.2;
-    this.cameraLookLerp = 6.5;
-    this._camPos = new THREE.Vector3(0, 11, 13);
-    this._lookTarget = new THREE.Vector3(0, 0.4, -3);
+    this.camLerp = 6.0;
+    this.lookLerp = 7.5;
   }
 
   _initLights() {
-    const hemi = new THREE.HemisphereLight(0x4a4a80, 0x0a0a12, 0.55);
-    this.scene.add(hemi);
-
-    const dir = new THREE.DirectionalLight(0xffffff, 0.85);
-    dir.position.set(8, 18, 10);
+    this.scene.add(new THREE.HemisphereLight(0x8aa0c0, 0x0a0c12, 0.65));
+    const dir = new THREE.DirectionalLight(0xfff5e6, 0.9);
+    dir.position.set(12, 28, 10);
     dir.castShadow = true;
     dir.shadow.mapSize.set(1024, 1024);
-    dir.shadow.camera.near = 1;
-    dir.shadow.camera.far = 50;
-    dir.shadow.camera.left = -25;
-    dir.shadow.camera.right = 25;
-    dir.shadow.camera.top = 25;
-    dir.shadow.camera.bottom = -25;
+    dir.shadow.camera.near = 2;
+    dir.shadow.camera.far = 60;
+    dir.shadow.camera.left = -30;
+    dir.shadow.camera.right = 30;
+    dir.shadow.camera.top = 30;
+    dir.shadow.camera.bottom = -30;
     dir.shadow.bias = -0.001;
     this.scene.add(dir);
+    const fill = new THREE.DirectionalLight(0x6a90ff, 0.25);
+    fill.position.set(-10, 12, -8);
+    this.scene.add(fill);
   }
 
   async init() {
     this.world = new SectorCity(this.scene);
-    this.snake = new Snake(this.scene, { startLength: 5 });
+    this.snake = new Snake(this.scene, { startLength: 6 });
     this._spawnFoods();
     this.setState(GameState.MENU);
   }
 
   _spawnFoods() {
     while (this.foods.length < this.maxFood) {
-      const f = spawnFood(this.scene, this.world.bounds - 2, this.foods);
-      this.foods.push(f);
+      this.foods.push(spawnFood(this.scene, this.world.bounds - 3, this.foods));
     }
   }
 
   startGame() {
-    this.snake.reset(5);
+    this.snake.reset(6);
     this.foods.forEach((f) => f.dispose());
     this.foods = [];
     this._spawnFoods();
@@ -137,11 +138,9 @@ export class GameEngine {
   gameOver() {
     this.snake.die();
     this.input.setEnabled(false);
+    this.input.showJoystick(false);
     this.setState(GameState.GAMEOVER);
-    this.onGameOver({
-      score: this.snake.score,
-      length: this.snake.length,
-    });
+    this.onGameOver({ score: this.snake.score, length: this.snake.length });
   }
 
   setState(s) {
@@ -164,17 +163,13 @@ export class GameEngine {
   _loop = () => {
     if (!this._running) return;
     this._raf = requestAnimationFrame(this._loop);
-
     const dt = Math.min(this.clock.getDelta(), 0.05);
     this.time += dt;
 
-    if (this.state === GameState.PLAYING) {
-      this._updateGameplay(dt);
-    }
-
+    if (this.state === GameState.PLAYING) this._updateGameplay(dt);
     this._updateCamera(dt);
     if (this.world) this.world.update(dt, this.time);
-    this.foods.forEach((f) => f.update(dt, this.time));
+    for (let i = 0; i < this.foods.length; i++) this.foods[i].update(dt, this.time);
 
     if (this.snake && this.state === GameState.PLAYING) {
       const fill = document.getElementById('boost-energy-fill');
@@ -183,6 +178,8 @@ export class GameEngine {
         fill.style.transform = `scaleX(${this.snake.getBoostEnergy().toFixed(3)})`;
         bar.classList.toggle('hidden', !this._isTouchDevice());
       }
+      const lenEl = document.getElementById('length-value');
+      if (lenEl) lenEl.textContent = String(this.snake.length);
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -190,20 +187,17 @@ export class GameEngine {
 
   _updateGameplay(dt) {
     this.input.update(dt);
-    const dir = this.input.getDirection();
-    const boosting = this.input.isBoosting();
-    const magnitude = this.input.getMagnitude();
-    const analog = this.input.isAnalog();
+    const desired = this.input.getDesiredHeading();
+    const boost = this.input.isBoosting();
+    const mag = this.input.getMagnitude();
 
-    this.snake.setTargetDirection(dir.x, dir.z, analog);
-    this.snake.update(dt, dir, boosting, magnitude, analog);
+    this.snake.update(dt, desired, boost, mag || (this.input.isSteering() ? 1 : 0.5));
 
-    const headPos = this.snake.getHeadPosition();
-    if (this.world.checkCollision(headPos, 0.3)) {
+    const head = this.snake.getHeadPosition();
+    if (this.world.checkCollision(head, 0.32)) {
       this.gameOver();
       return;
     }
-
     if (this.snake.checkSelfCollision()) {
       this.gameOver();
       return;
@@ -212,44 +206,44 @@ export class GameEngine {
     for (let i = this.foods.length - 1; i >= 0; i--) {
       const f = this.foods[i];
       if (!f.alive) continue;
-      if (headPos.distanceTo(f.getPosition()) < 0.55) {
+      if (head.distanceToSquared(f.getPosition()) < 0.45 * 0.45) {
         this.snake.addScore(f.value * 10);
         this.snake.grow(f.growAmount);
         f.collect();
         this.foods.splice(i, 1);
         this.onScore(this.snake.score, this.snake.combo);
-        if (navigator.vibrate) navigator.vibrate(15);
+        if (navigator.vibrate) navigator.vibrate(12);
       }
     }
-
     this._spawnFoods();
   }
 
   _updateCamera(dt) {
     if (!this.snake) return;
     const head = this.snake.getHeadPosition();
-    const dir = this.snake.direction;
+    const dir = this.snake.heading;
 
-    const back = 7.5;
-    const height = 8.2;
-    const desired = this._camPos || this.camera.position.clone();
+    const height = 18 + Math.min(12, this.snake.length * 0.15);
+    const back = 12 + Math.min(6, this.snake.length * 0.08);
+    const desired = this._camPos;
     desired.set(
-      head.x - dir.x * back,
-      head.y + height,
-      head.z - dir.z * back
+      head.x - dir.x * back * 0.35,
+      height,
+      head.z - dir.z * back * 0.35 + back * 0.55
     );
-    desired.x += dir.z * 0.4;
-    desired.z -= dir.x * 0.4;
 
-    const k = 1 - Math.exp(-this.cameraLerp * dt);
+    const k = 1 - Math.exp(-this.camLerp * dt);
     this.camera.position.lerp(desired, k);
-    this._camPos = this.camera.position;
 
-    const lookAt = head.clone().addScaledVector(dir, 4.2);
-    lookAt.y += 0.35;
-    if (!this._lookTarget) this._lookTarget = lookAt.clone();
-    this._lookTarget.lerp(lookAt, 1 - Math.exp(-this.cameraLookLerp * dt));
-    this.camera.lookAt(this._lookTarget);
+    const look = head.clone();
+    look.x += dir.x * 3;
+    look.z += dir.z * 3;
+    this._look.lerp(look, 1 - Math.exp(-this.lookLerp * dt));
+    this.camera.lookAt(this._look);
+
+    this._targetFov = this._baseFov + (this.snake.boosting ? 4 : 0) + Math.min(6, this.snake.length * 0.04);
+    this.camera.fov += (this._targetFov - this.camera.fov) * Math.min(1, dt * 4);
+    this.camera.updateProjectionMatrix();
   }
 
   _isTouchDevice() {
@@ -264,13 +258,8 @@ export class GameEngine {
     this.renderer.setSize(w, h);
   }
 
-  getScore() {
-    return this.snake?.score || 0;
-  }
-
-  getCombo() {
-    return this.snake?.combo || 1;
-  }
+  getScore() { return this.snake?.score || 0; }
+  getCombo() { return this.snake?.combo || 1; }
 
   dispose() {
     this.stopLoop();
