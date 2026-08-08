@@ -38,7 +38,7 @@ class Snake3DApp {
   async start() {
     this.i18n.apply();
     this._bindUI();
-    this.stats = await this.bridge.getStats();
+    this.stats = await this.bridge.getPlayerStats();
     this._renderStats();
 
     const container = document.getElementById('canvas-container');
@@ -132,7 +132,7 @@ class Snake3DApp {
 
   async _onGameOver(data) {
     if (this.els.finalScore) this.els.finalScore.textContent = data.score;
-    this.stats = await this.bridge.saveScore(data.score);
+    this.stats = await this.bridge.submitScore(data.score);
     this._renderStats();
     if (this.els.finalBest) this.els.finalBest.textContent = this.stats.bestScore;
   }
