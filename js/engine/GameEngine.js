@@ -203,7 +203,7 @@ export class GameEngine {
         this.snake.grow(f.growAmount);
         f.collect();
         this.foods.splice(i, 1);
-        this.onScore(this.snake.score, this.combo);
+        this.onScore(this.snake.score, this.snake.combo);
         if (navigator.vibrate) navigator.vibrate(15);
       }
     }
