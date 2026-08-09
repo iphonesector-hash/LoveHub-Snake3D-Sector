@@ -8,11 +8,13 @@ export const AI_TYPES = {
   speedster:  { speed: 1.45, aggression: 0.4, size: 0.7, color: [0xffe060, 0xd0c040], name: 'Flash' },
   elite:      { speed: 1.25, aggression: 0.9, size: 1.5, color: [0xc060ff, 0xa040e0], name: 'Elite' },
 };
+
 export function pickAIType(biasList) {
   const keys = biasList?.length ? biasList : Object.keys(AI_TYPES);
   const r = Math.random();
-  if (r < 0.04) return 'elite';
-  if (r < 0.08) return 'giant';
+  if (r < 0.035) return 'elite';
+  if (r < 0.07) return 'giant';
   return keys[(Math.random() * keys.length) | 0];
 }
-export const AI_NAMES = ['Nova','Rex','Echo','Blitz','Kai','Vex','Orion','Nyx','Ash','Pixel','Drift','Spark','Rogue','Zen','Flux','Hex'];
+
+export const AI_NAMES = ['Nova','Rex','Echo','Blitz','Kai','Vex','Orion','Nyx','Ash','Pixel','Drift','Spark','Rogue','Zen','Flux','Hex','Lyra','Bolt','Shade','Prism'];
