@@ -1,7 +1,3 @@
-/**
- * Collectibles — orbs, crystals, rare stars
- */
-
 import * as THREE from 'three';
 
 const COLORS = [0x3dffb5, 0xffd24a, 0xff6b9d, 0x6bc5ff, 0xc79bff, 0xff9a5c];
@@ -49,14 +45,18 @@ export class Food {
   dispose() { if (this.alive) this.collect(); }
 }
 
-export function spawnFood(scene, bounds = 40, existing = []) {
+export function spawnFood(scene, bounds = 40, existing = [], opts = {}) {
   let x, z, tries = 0;
   do {
     const a = Math.random() * Math.PI * 2;
     const r = 5 + Math.random() * (bounds - 8);
     x = Math.cos(a) * r; z = Math.sin(a) * r; tries++;
   } while (tries < 16 && existing.some((f) => f.alive && Math.hypot(f._x - x, f._z - z) < 2.0));
+  const starBias = opts.starBias ?? 0.04;
+  const crystalBias = opts.crystalBias ?? 0.14;
   const roll = Math.random();
-  const type = roll < 0.04 ? 'star' : roll < 0.18 ? 'crystal' : 'orb';
+  let type = 'orb';
+  if (roll < starBias) type = 'star';
+  else if (roll < starBias + crystalBias) type = 'crystal';
   return new Food(scene, x, z, type);
 }
