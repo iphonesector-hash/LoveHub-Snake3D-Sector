@@ -16,7 +16,7 @@ const DEFS = {
   double_xp: { color: 0x80ffc0, duration: 12 },
 };
 
-const WEIGHTS = [
+const BASE_WEIGHTS = [
   ['speed', 0.12], ['bite', 0.1], ['shield', 0.09], ['magnet', 0.09],
   ['ghost', 0.07], ['multiplier', 0.07], ['freeze', 0.07], ['star', 0.07],
   ['prize', 0.06], ['shockwave', 0.06], ['golden_bite', 0.07],
@@ -61,8 +61,13 @@ export class PowerUp {
   dispose() { if (this.alive) this.collect(); }
 }
 
-export function spawnPowerUp(scene) {
-  let r = Math.random(), acc = 0, type = 'speed';
-  for (const [t, w] of WEIGHTS) { acc += w; if (r <= acc) { type = t; break; } }
+export function spawnPowerUp(scene, bias = null) {
+  let weights = BASE_WEIGHTS;
+  if (bias && typeof bias === 'object') {
+    weights = BASE_WEIGHTS.map(([t, w]) => [t, w * (bias[t] || 1)]);
+  }
+  const total = weights.reduce((s, [, w]) => s + w, 0);
+  let r = Math.random() * total, acc = 0, type = 'speed';
+  for (const [t, w] of weights) { acc += w; if (r <= acc) { type = t; break; } }
   return new PowerUp(scene, 0, 0, type);
 }
