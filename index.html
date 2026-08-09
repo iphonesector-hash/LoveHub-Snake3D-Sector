@@ -15,7 +15,7 @@
     .boost-btn.hidden{display:none!important}
     .boost-btn.side-left{right:auto;left:calc(14px + env(safe-area-inset-left,0px))}
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@2a7a8daa7eb1964fb7122388bde0109b85ca34d9/css/game.css">
+  <link rel="stylesheet" href="./css/game.css">
 </head>
 <body>
   <div id="game-root">
@@ -34,8 +34,20 @@
         <span id="fx-bite" class="fx-badge bite hidden">BITE</span>
         <span id="fx-speed" class="fx-badge speed hidden">SPD</span>
         <span id="fx-shield" class="fx-badge shield hidden">SHIELD</span>
+        <span id="fx-magnet" class="fx-badge magnet hidden">MAG</span>
+        <span id="fx-ghost" class="fx-badge ghost hidden">GHOST</span>
+        <span id="fx-mult" class="fx-badge mult hidden">x2</span>
+        <span id="fx-freeze" class="fx-badge freeze hidden">FRZ</span>
+        <span id="fx-gbite" class="fx-badge gbite hidden">G-BITE</span>
+        <span id="fx-xp" class="fx-badge xp hidden">2XP</span>
         <span class="fx-badge rivals">AI <span id="rivals-count">0</span></span>
       </div>
+      <div class="hud-meta">
+        <span class="hud-dist">⇄ <span id="hud-distance">0</span></span>
+        <span id="hud-zone" class="hud-zone"></span>
+      </div>
+      <div id="hud-event" class="hud-event hidden"></div>
+      <div id="hud-mission" class="hud-mission hidden"></div>
     </div>
     <div id="screen-menu" class="screen">
       <div class="menu-content">
@@ -69,6 +81,6 @@
     <button id="btn-boost" class="boost-btn hidden" type="button">BOOST</button>
   </div>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
-  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@2a7a8daa7eb1964fb7122388bde0109b85ca34d9/js/main.js"></script>
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>
