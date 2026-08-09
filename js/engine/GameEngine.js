@@ -1,10 +1,8 @@
-/**
- * GameEngine — campaign + arcade, themed arenas
- */
-
+/** GameEngine — campaign with unique level rules */
 import * as THREE from 'three';
 import { Snake } from '../entities/Snake.js';
 import { spawnFood } from '../entities/Food.js';
+import { Hazard } from '../entities/Hazard.js';
 import { SectorCity, WORLD_DEFS } from '../worlds/SectorCity.js';
 import { InputSystem } from '../systems/InputSystem.js';
 import { getLevel, nextLevelId } from '../data/levels.js';
@@ -17,20 +15,25 @@ export const GameState = {
 export class GameEngine {
   constructor(container, options = {}) {
     this.container = container;
-    this.options = options;
     this.state = GameState.LOADING;
     this.clock = new THREE.Clock();
     this.time = 0;
     this.foods = [];
+    this.hazards = [];
     this.maxFood = 52;
     this.mode = 'arcade';
     this.worldId = 'sectorCity';
     this.levelId = 1;
     this.levelTimer = 0;
+    this.surviveTimer = 0;
+    this.goalProgress = { stars: 0, crystals: 0 };
+    this.activeMods = {};
+    this.spawnOpts = {};
     this.onStateChange = options.onStateChange || (() => {});
     this.onScore = options.onScore || (() => {});
     this.onGameOver = options.onGameOver || (() => {});
     this.onLevelClear = options.onLevelClear || (() => {});
+    this.onGoal = options.onGoal || (() => {});
     this._headPos = new THREE.Vector3();
     this._camTarget = new THREE.Vector3();
     this._look = new THREE.Vector3();
@@ -72,9 +75,7 @@ export class GameEngine {
     const aspect = this.container.clientWidth / Math.max(1, this.container.clientHeight);
     this.camera = new THREE.PerspectiveCamera(this._baseFov, aspect, 0.1, 220);
     this.camera.position.set(0, 24, 14);
-    this.camera.lookAt(0, 0, 0);
-    this.camLerp = 8.5;
-    this.lookLerp = 11;
+    this.camLerp = 8.5; this.lookLerp = 11;
   }
 
   _initLights() {
@@ -113,14 +114,12 @@ export class GameEngine {
 
   _spawnFoods() {
     while (this.foods.length < this.maxFood) {
-      this.foods.push(spawnFood(this.scene, this.world.bounds - 2, this.foods));
+      this.foods.push(spawnFood(this.scene, this.world.bounds - 2, this.foods, this.spawnOpts));
     }
   }
 
-  _clearFoods() {
-    this.foods.forEach((f) => f.dispose());
-    this.foods = [];
-  }
+  _clearFoods() { this.foods.forEach((f) => f.dispose()); this.foods = []; }
+  _clearHazards() { this.hazards.forEach((h) => h.dispose()); this.hazards = []; }
 
   _burst(x, z, color = 0x3dffb5) {
     for (let i = 0; i < 5; i++) {
@@ -150,21 +149,54 @@ export class GameEngine {
   }
 
   startGame() {
+    this.goalProgress = { stars: 0, crystals: 0 };
+    this.surviveTimer = 0;
+    this.activeMods = {};
+    this.spawnOpts = {};
+    this._clearHazards();
     let worldId = this.worldId;
     if (this.mode === 'campaign') {
       const lv = getLevel(this.levelId);
       worldId = lv.world;
-      this.levelTimer = lv.timeLimit > 0 ? lv.timeLimit : 0;
-    } else this.levelTimer = 0;
+      const m = lv.mods || {};
+      this.activeMods = { ...m };
+      this.maxFood = m.foodMax || 48;
+      this.spawnOpts = { starBias: m.starBias ?? 0.04, crystalBias: m.crystalBias ?? 0.14 };
+      this.levelTimer = m.timeLimit || 0;
+    } else {
+      this.maxFood = 52; this.levelTimer = 0; this.spawnOpts = {};
+    }
     if (worldId !== this.world?.def?.id) this._loadWorld(worldId);
     else this.world.applySceneTheme(this.scene);
+    if (this.activeMods.boundsScale && this.activeMods.boundsScale < 1) {
+      this.world.bounds = (WORLD_DEFS[worldId]?.bounds || 40) * this.activeMods.boundsScale;
+    } else {
+      this.world.bounds = WORLD_DEFS[worldId]?.bounds || 40;
+    }
     this.snake.reset(6);
+    this.snake.speedMult = this.activeMods.speed || 1;
     this._clearFoods();
     this._spawnFoods();
+    const hc = this.activeMods.hazards || 0;
+    for (let i = 0; i < hc; i++) this.hazards.push(new Hazard(this.scene, this.world.bounds));
     this.input.setEnabled(true);
-    this.input.showControls(true);
+    this.input.showControls(!this.activeMods.noBoost);
+    if (this.activeMods.noBoost) {
+      this.input.boostHeld = false;
+      document.getElementById('btn-boost')?.classList.add('hidden');
+    }
     this.setState(GameState.PLAYING);
     this.clock.start();
+    this._emitGoal();
+  }
+
+  _emitGoal() {
+    if (this.mode !== 'campaign') { this.onGoal(null); return; }
+    const lv = getLevel(this.levelId);
+    this.onGoal({
+      level: lv,
+      progress: { ...this.goalProgress, score: this.snake.score, length: this.snake.length, combo: this.snake.combo, survive: this.surviveTimer },
+    });
   }
 
   pause() {
@@ -219,16 +251,36 @@ export class GameEngine {
     this._updateParticles(dt);
     if (this.world) this.world.update(dt, this.time);
     for (let i = 0; i < this.foods.length; i++) this.foods[i].update(dt, this.time);
+    for (let i = 0; i < this.hazards.length; i++) this.hazards[i].update(dt);
     this.renderer.render(this.scene, this.camera);
   };
 
+  _checkGoal() {
+    if (this.mode !== 'campaign') return false;
+    const g = getLevel(this.levelId).goal;
+    const s = this.snake;
+    switch (g.type) {
+      case 'score': return s.score >= g.value;
+      case 'length': return s.length >= g.value;
+      case 'stars': return this.goalProgress.stars >= g.value;
+      case 'crystals': return this.goalProgress.crystals >= g.value;
+      case 'combo': return s.combo >= g.value;
+      case 'survive': return this.surviveTimer >= g.value;
+      default: return false;
+    }
+  }
+
   _updateGameplay(dt) {
     this.input.update(dt);
-    this.snake.update(dt, this.input.getHeading(), this.input.getMagnitude(), this.input.isBoosting());
+    let boost = this.input.isBoosting();
+    if (this.activeMods.noBoost) boost = false;
+    this.snake.update(dt, this.input.getHeading(), this.input.getMagnitude(), boost);
     this.snake.writeHead(this._headPos);
     if (this.world.checkCollision(this._headPos, 0.34) || this.snake.checkSelfCollision()) {
-      this.gameOver();
-      return;
+      this.gameOver(); return;
+    }
+    for (const h of this.hazards) {
+      if (h.hits(this._headPos.x, this._headPos.z)) { this.gameOver(); return; }
     }
     for (let i = this.foods.length - 1; i >= 0; i--) {
       const f = this.foods[i];
@@ -237,21 +289,29 @@ export class GameEngine {
       if (Math.hypot(this._headPos.x - p.x, this._headPos.z - p.z) < 0.72) {
         this.snake.addScore(f.value * 10);
         this.snake.grow(f.growAmount);
+        if (f.type === 'star') this.goalProgress.stars++;
+        if (f.type === 'crystal') this.goalProgress.crystals++;
         this._burst(p.x, p.z, f.mat.color.getHex());
         f.collect();
         this.foods.splice(i, 1);
         this.onScore(this.snake.score, this.snake.combo);
+        this._emitGoal();
         if (navigator.vibrate) navigator.vibrate(8);
       }
     }
     this._spawnFoods();
     if (this.mode === 'campaign') {
-      const lv = getLevel(this.levelId);
-      if (lv.timeLimit > 0) {
+      this.surviveTimer += dt;
+      if (this.levelTimer > 0) {
         this.levelTimer -= dt;
-        if (this.levelTimer <= 0) { this.gameOver(); return; }
+        if (this.levelTimer <= 0) {
+          if (this._checkGoal()) this.levelClear();
+          else this.gameOver();
+          return;
+        }
       }
-      if (this.snake.score >= lv.targetScore && this.snake.length >= lv.targetLength) this.levelClear();
+      this._emitGoal();
+      if (this._checkGoal()) this.levelClear();
     }
   }
 
@@ -264,8 +324,7 @@ export class GameEngine {
     const back = 9 + Math.min(6, len * 0.1);
     const boostLift = this.snake.boosting ? 1.8 : 0;
     this._camTarget.set(this._headPos.x - dir.x * back * 0.22, height + boostLift, this._headPos.z - dir.z * back * 0.22 + back * 0.48);
-    const k = 1 - Math.exp(-this.camLerp * dt);
-    this.camera.position.lerp(this._camTarget, k);
+    this.camera.position.lerp(this._camTarget, 1 - Math.exp(-this.camLerp * dt));
     this._look.set(this._headPos.x + dir.x * 4, 0.12, this._headPos.z + dir.z * 4);
     this._lookSmooth.lerp(this._look, 1 - Math.exp(-this.lookLerp * dt));
     this.camera.lookAt(this._lookSmooth);
@@ -293,6 +352,7 @@ export class GameEngine {
     this.snake?.dispose();
     this.world?.dispose();
     this._clearFoods();
+    this._clearHazards();
     this.renderer.dispose();
   }
 }
