@@ -1,12 +1,9 @@
-/**
- * LoveHub Snake 3D — Sector Edition
- * Entry point
- */
-
 import { GameEngine, GameState } from './engine/GameEngine.js';
 import { I18n } from './i18n/I18n.js';
 import { LoveHubBridge } from './integration/LoveHubBridge.js';
 import { GameNetworkService } from './network/GameNetworkService.js';
+import { WORLD_DEFS } from './worlds/SectorCity.js';
+import { LEVELS } from './data/levels.js';
 
 class Snake3DApp {
   constructor() {
@@ -15,8 +12,10 @@ class Snake3DApp {
     this.network = new GameNetworkService();
     this.engine = null;
     this.stats = null;
-    this.pendingMode = 'solo';
-
+    this.pendingMode = 'arcade';
+    this.pendingLevel = 1;
+    this.nextAfterClear = null;
+    this.campaignProgress = this._loadProgress();
     this.els = {
       loading: document.getElementById('screen-loading'),
       menu: document.getElementById('screen-menu'),
@@ -24,6 +23,8 @@ class Snake3DApp {
       gameover: document.getElementById('screen-gameover'),
       worlds: document.getElementById('screen-worlds'),
       settings: document.getElementById('screen-settings'),
+      campaign: document.getElementById('screen-campaign'),
+      levelclear: document.getElementById('screen-levelclear'),
       hud: document.getElementById('hud'),
       score: document.getElementById('score-value'),
       combo: document.getElementById('combo-display'),
@@ -35,59 +36,117 @@ class Snake3DApp {
       playerLevel: document.getElementById('player-level'),
       loadingFill: document.getElementById('loading-fill'),
       loadingTip: document.getElementById('loading-tip'),
-      duoResult: document.getElementById('duo-result'),
+      clearScore: document.getElementById('clear-score'),
+      hudLevel: document.getElementById('hud-level'),
+      levelLabel: document.getElementById('level-label'),
+      hudTimer: document.getElementById('hud-timer'),
+      timerValue: document.getElementById('timer-value'),
     };
   }
+
+  _loadProgress() {
+    try { return JSON.parse(localStorage.getItem('snake3d_campaign') || '{"max":1}'); }
+    catch { return { max: 1 }; }
+  }
+  _saveProgress() { localStorage.setItem('snake3d_campaign', JSON.stringify(this.campaignProgress)); }
 
   async start() {
     this.i18n.apply();
     this._bindUI();
+    this._buildWorlds();
+    this._buildLevels();
     this.stats = await this.bridge.getPlayerStats();
     this._renderStats();
-
     const container = document.getElementById('canvas-container');
     this.engine = new GameEngine(container, {
       onStateChange: (s) => this._onState(s),
       onScore: (score, combo) => this._onScore(score, combo),
       onGameOver: (data) => this._onGameOver(data),
+      onLevelClear: (data) => this._onLevelClear(data),
     });
-
     this._setLoading(0.3, 'init');
     await this.engine.init();
     this._setLoading(1, 'ready');
-
-    await new Promise((r) => setTimeout(r, 180));
+    await new Promise((r) => setTimeout(r, 150));
     this.engine.startLoop();
     this._showScreen('menu');
   }
 
+  _buildWorlds() {
+    const grid = document.getElementById('world-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    Object.values(WORLD_DEFS).forEach((w) => {
+      const btn = document.createElement('button');
+      btn.className = 'world-card';
+      const name = this.i18n.language === 'fa' ? w.nameFa : w.name;
+      btn.innerHTML = `<div class="world-name">${name}</div><div class="world-meta">${this.i18n.t('world_open')}</div>`;
+      btn.addEventListener('click', () => {
+        this.pendingMode = 'arcade';
+        this.engine.setWorld(w.id);
+        this.engine.setMode('arcade');
+        this._play();
+      });
+      grid.appendChild(btn);
+    });
+  }
+
+  _buildLevels() {
+    const list = document.getElementById('level-list');
+    if (!list) return;
+    list.innerHTML = '';
+    LEVELS.forEach((lv) => {
+      const open = lv.id <= (this.campaignProgress.max || 1);
+      const btn = document.createElement('button');
+      btn.className = 'level-card' + (open ? '' : ' locked');
+      btn.disabled = !open;
+      btn.innerHTML = `<span class="lv-id">${lv.id}</span><span class="lv-name">${lv.label}</span><span class="lv-goal">${lv.targetScore} pts</span>`;
+      if (open) {
+        btn.addEventListener('click', () => {
+          this.pendingMode = 'campaign';
+          this.pendingLevel = lv.id;
+          this.engine.setMode('campaign');
+          this.engine.setLevel(lv.id);
+          this._play();
+        });
+      }
+      list.appendChild(btn);
+    });
+  }
+
   _bindUI() {
-    document.getElementById('btn-play')?.addEventListener('click', () => { this.pendingMode = 'solo'; this._play(); });
-    document.getElementById('btn-duo')?.addEventListener('click', () => { this.pendingMode = 'local2'; this._play(); });
+    document.getElementById('btn-play')?.addEventListener('click', () => {
+      this.pendingMode = 'arcade'; this.engine.setMode('arcade'); this._play();
+    });
+    document.getElementById('btn-campaign')?.addEventListener('click', () => { this._buildLevels(); this._showScreen('campaign'); });
+    document.getElementById('btn-campaign-back')?.addEventListener('click', () => this._showScreen('menu'));
+    document.getElementById('btn-worlds')?.addEventListener('click', () => { this._buildWorlds(); this._showScreen('worlds'); });
+    document.getElementById('btn-worlds-back')?.addEventListener('click', () => this._showScreen('menu'));
+    document.getElementById('btn-settings')?.addEventListener('click', () => { this._syncSettingsUI(); this._showScreen('settings'); });
+    document.getElementById('btn-settings-back')?.addEventListener('click', () => this._showScreen('menu'));
     document.getElementById('btn-retry')?.addEventListener('click', () => this._play());
     document.getElementById('btn-restart')?.addEventListener('click', () => this._play());
     document.getElementById('btn-resume')?.addEventListener('click', () => this.engine.resume());
     document.getElementById('btn-quit')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-menu')?.addEventListener('click', () => this._toMenu());
+    document.getElementById('btn-clear-menu')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-pause')?.addEventListener('click', () => this.engine.pause());
-    document.getElementById('btn-worlds')?.addEventListener('click', () => this._showScreen('worlds'));
-    document.getElementById('btn-worlds-back')?.addEventListener('click', () => this._showScreen('menu'));
-    document.getElementById('btn-settings')?.addEventListener('click', () => { this._syncSettingsUI(); this._showScreen('settings'); });
-    document.getElementById('btn-settings-back')?.addEventListener('click', () => this._showScreen('menu'));
-
-    const setLang = (lang) => { this.i18n.setLanguage(lang); this._updateLangButtons(); };
+    document.getElementById('btn-next-level')?.addEventListener('click', () => {
+      if (this.nextAfterClear) {
+        this.pendingMode = 'campaign'; this.pendingLevel = this.nextAfterClear;
+        this.engine.setMode('campaign'); this.engine.setLevel(this.nextAfterClear); this._play();
+      } else this._toMenu();
+    });
+    const setLang = (lang) => { this.i18n.setLanguage(lang); this._updateLangButtons(); this._buildWorlds(); };
     document.getElementById('btn-lang-en')?.addEventListener('click', () => setLang('en'));
     document.getElementById('btn-lang-fa')?.addEventListener('click', () => setLang('fa'));
     document.getElementById('btn-set-en')?.addEventListener('click', () => setLang('en'));
     document.getElementById('btn-set-fa')?.addEventListener('click', () => setLang('fa'));
-
     document.getElementById('btn-set-joy')?.addEventListener('click', () => {
-      const side = this.engine.input.side === 'left' ? 'right' : 'left';
-      this.engine.input.side = side;
-      localStorage.setItem('snake3d_joy_side', side);
+      this.engine.input.side = this.engine.input.side === 'left' ? 'right' : 'left';
+      localStorage.setItem('snake3d_joy_side', this.engine.input.side);
       this.engine.input._applySide();
     });
-
     document.getElementById('input-sens')?.addEventListener('input', (e) => {
       this.engine.input.setSensitivity(Number(e.target.value) / 100);
     });
@@ -101,10 +160,8 @@ class Snake3DApp {
 
   _updateLangButtons() {
     const en = this.i18n.language === 'en';
-    document.getElementById('btn-lang-en')?.classList.toggle('active', en);
-    document.getElementById('btn-lang-fa')?.classList.toggle('active', !en);
-    document.getElementById('btn-set-en')?.classList.toggle('active', en);
-    document.getElementById('btn-set-fa')?.classList.toggle('active', !en);
+    ['btn-lang-en', 'btn-set-en'].forEach((id) => document.getElementById(id)?.classList.toggle('active', en));
+    ['btn-lang-fa', 'btn-set-fa'].forEach((id) => document.getElementById(id)?.classList.toggle('active', !en));
   }
 
   _setLoading(pct, tip) {
@@ -113,27 +170,24 @@ class Snake3DApp {
   }
 
   _showScreen(name) {
-    const map = {
-      loading: this.els.loading, menu: this.els.menu, pause: this.els.pause,
-      gameover: this.els.gameover, worlds: this.els.worlds, settings: this.els.settings,
-    };
-    Object.entries(map).forEach(([k, el]) => { if (el) el.classList.toggle('hidden', k !== name); });
+    ['loading','menu','pause','gameover','worlds','settings','campaign','levelclear'].forEach((k) => {
+      this.els[k]?.classList.toggle('hidden', k !== name);
+    });
     if (this.els.hud) this.els.hud.classList.add('hidden');
   }
 
   _onState(s) {
     if (s === GameState.PLAYING) {
-      this._showScreen(null);
-      if (this.els.hud) this.els.hud.classList.remove('hidden');
-      ['loading','menu','pause','gameover','worlds','settings'].forEach((k) => this.els[k]?.classList.add('hidden'));
-    } else if (s === GameState.PAUSED) {
-      this.els.pause?.classList.remove('hidden');
-    } else if (s === GameState.GAMEOVER) {
-      this.els.gameover?.classList.remove('hidden');
-      if (this.els.hud) this.els.hud.classList.add('hidden');
-    } else if (s === GameState.MENU) {
-      this._showScreen('menu');
-    }
+      ['loading','menu','pause','gameover','worlds','settings','campaign','levelclear'].forEach((k) => this.els[k]?.classList.add('hidden'));
+      this.els.hud?.classList.remove('hidden');
+      const camp = this.pendingMode === 'campaign';
+      this.els.hudLevel?.classList.toggle('hidden', !camp);
+      this.els.hudTimer?.classList.toggle('hidden', !camp);
+      if (camp && this.els.levelLabel) this.els.levelLabel.textContent = `Lv ${this.pendingLevel}`;
+    } else if (s === GameState.PAUSED) this.els.pause?.classList.remove('hidden');
+    else if (s === GameState.GAMEOVER) { this.els.gameover?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
+    else if (s === GameState.LEVELCLEAR) { this.els.levelclear?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
+    else if (s === GameState.MENU) this._showScreen('menu');
   }
 
   _onScore(score, combo) {
@@ -143,20 +197,29 @@ class Snake3DApp {
     if (combo > 1 && this.els.combo && this.els.comboValue) {
       this.els.combo.classList.remove('hidden');
       this.els.comboValue.textContent = `x${combo.toFixed(1)}`;
-    } else if (this.els.combo) this.els.combo.classList.add('hidden');
+    } else this.els.combo?.classList.add('hidden');
+    if (this.pendingMode === 'campaign' && this.els.timerValue) {
+      const t = this.engine.getLevelTimer();
+      if (t > 0) { this.els.hudTimer?.classList.remove('hidden'); this.els.timerValue.textContent = Math.ceil(t); }
+      else this.els.hudTimer?.classList.add('hidden');
+    }
   }
 
   async _onGameOver(data) {
     if (this.els.finalScore) this.els.finalScore.textContent = data.score;
-    if (this.els.duoResult) {
-      if (data.mode === 'local2' && data.winner) {
-        this.els.duoResult.classList.remove('hidden');
-        this.els.duoResult.textContent = data.winner === 'p1' ? this.i18n.t('winner_p1') : this.i18n.t('winner_p2');
-      } else this.els.duoResult.classList.add('hidden');
-    }
     this.stats = await this.bridge.submitScore(data.score);
     this._renderStats();
     if (this.els.finalBest) this.els.finalBest.textContent = this.stats.bestScore;
+  }
+
+  _onLevelClear(data) {
+    if (this.els.clearScore) this.els.clearScore.textContent = data.score;
+    this.nextAfterClear = data.nextLevelId;
+    if (data.nextLevelId && data.nextLevelId > (this.campaignProgress.max || 1)) {
+      this.campaignProgress.max = data.nextLevelId; this._saveProgress();
+    }
+    document.getElementById('btn-next-level')?.classList.toggle('hidden', !data.nextLevelId);
+    this.bridge.submitScore(data.score);
   }
 
   _renderStats() {
@@ -168,6 +231,7 @@ class Snake3DApp {
 
   _play() {
     this.engine.setMode(this.pendingMode);
+    if (this.pendingMode === 'campaign') this.engine.setLevel(this.pendingLevel);
     this.engine.startGame();
     const massEl = document.getElementById('mass-value');
     if (massEl) massEl.textContent = this.engine.getLength();
