@@ -12,10 +12,11 @@ export class Snake {
     this.desired = new THREE.Vector3(0, 0, -1);
     this.speed = BASE_SPEED; this.targetSpeed = BASE_SPEED;
     this.boosting = false; this.speedMult = 1; this._baseSpeedMult = 1;
-    this.effects = { speed: 0, bite: 0, shield: 0 };
+    this.effects = { speed: 0, bite: 0, shield: 0, magnet: 0, ghost: 0, multiplier: 0, freeze: 0, golden_bite: 0, double_xp: 0 };
     this.alive = true;
     this.length = options.startLength || 6;
     this.score = 0; this.mass = this.length; this.combo = 1; this.comboTimer = 0;
+    this.xp = 0; this.level = 1; this.coins = 0;
     this.group = new THREE.Group(); scene.add(this.group);
     this._mats(); this._spawn();
   }
@@ -70,7 +71,7 @@ export class Snake {
     }
     this.boosting = !!boostHeld;
     for (const k of Object.keys(this.effects)) { if (this.effects[k] > 0) { this.effects[k] -= dt; if (this.effects[k] < 0) this.effects[k] = 0; } }
-    if (this.effects.speed > 0) this.speedMult = Math.max(this._baseSpeedMult || 1, 1.45);
+    if (this.effects.speed > 0) this.speedMult = Math.max(this._baseSpeedMult || 1, 1.5);
     else this.speedMult = this._baseSpeedMult || 1;
     const base = this.boosting ? BOOST_SPEED : BASE_SPEED;
     this.targetSpeed = base * (this.speedMult || 1);
@@ -100,18 +101,24 @@ export class Snake {
     }
     this._tmp.set(head.x + this.heading.x, 0.34, head.z + this.heading.z); head.mesh.lookAt(this._tmp);
     if (this._headLight) {
-      this._headLight.intensity = this.boosting ? 1.6 : (this.effects.bite > 0 ? 1.3 : 0.8);
-      this._headLight.color.setHex(this.effects.bite > 0 ? 0xff4060 : (this.boosting ? 0xffb040 : 0x2ee6ff));
+      this._headLight.intensity = this.boosting ? 1.6 : (this.effects.bite > 0 || this.effects.golden_bite > 0 ? 1.4 : 0.8);
+      this._headLight.color.setHex(this.effects.golden_bite > 0 ? 0xffc020 : this.effects.bite > 0 ? 0xff4060 : (this.boosting ? 0xffb040 : 0x2ee6ff));
     }
     if (this.comboTimer > 0) { this.comboTimer -= dt; if (this.comboTimer <= 0) this.combo = 1; }
   }
   applyEffect(type, duration) {
-    if (type === 'speed') this.effects.speed = Math.max(this.effects.speed, duration);
-    else if (type === 'bite') this.effects.bite = Math.max(this.effects.bite, duration);
-    else if (type === 'shield') this.effects.shield = Math.max(this.effects.shield, duration);
+    if (type in this.effects) this.effects[type] = Math.max(this.effects[type] || 0, duration);
   }
-  hasBite() { return this.effects.bite > 0; }
+  hasBite() { return this.effects.bite > 0 || this.effects.golden_bite > 0; }
   hasShield() { return this.effects.shield > 0; }
+  hasGhost() { return this.effects.ghost > 0; }
+  hasMagnet() { return this.effects.magnet > 0; }
+  scoreMult() {
+    let m = 1;
+    if (this.effects.multiplier > 0) m *= 2;
+    if (this.effects.golden_bite > 0) m *= 1.5;
+    return m;
+  }
   stealMass(amount = 2) {
     const steal = Math.min(amount, Math.max(0, this.segments.length - 5));
     for (let i = 0; i < steal; i++) {
@@ -132,18 +139,30 @@ export class Snake {
   checkSelfCollision(threshold = 0.4) {
     if (this.segments.length < 12) return false;
     const h = this.segments[0];
-    for (let i = 10; i < this.segments.length; i++) if (Math.hypot(h.x - this.segments[i].x, h.z - this.segments[i].z) < threshold) return true;
+    for (let i = 10; i < this.segments.length; i++)
+      if (Math.hypot(h.x - this.segments[i].x, h.z - this.segments[i].z) < threshold) return true;
     return false;
   }
   die() { this.alive = false; this.boosting = false; this.headMat.emissive.setHex(0xff2020); this.headMat.emissiveIntensity = 0.95; }
   reset(startLength = 6) {
     this.length = startLength; this.mass = startLength; this.score = 0; this.combo = 1; this.comboTimer = 0;
-    this.effects = { speed: 0, bite: 0, shield: 0 }; this.speedMult = 1; this._baseSpeedMult = 1;
+    this.effects = { speed: 0, bite: 0, shield: 0, magnet: 0, ghost: 0, multiplier: 0, freeze: 0, golden_bite: 0, double_xp: 0 };
+    this.speedMult = 1; this._baseSpeedMult = 1;
     this.headMat.emissive.setHex(0x0a3040); this.headMat.emissiveIntensity = 0.4; this._spawn();
   }
   addScore(points) {
-    const g = Math.floor(points * this.combo); this.score += g;
-    this.combo = Math.min(12, this.combo + 0.4); this.comboTimer = 2.2; return g;
+    const mult = this.scoreMult();
+    const g = Math.floor(points * this.combo * mult);
+    this.score += g;
+    this.combo = Math.min(15, this.combo + 0.45);
+    this.comboTimer = 2.4;
+    this.xp += Math.floor(g * (this.effects.double_xp > 0 ? 2 : 1) * 0.15);
+    if (this.xp >= this.level * 100) {
+      this.xp -= this.level * 100;
+      this.level++;
+      this.coins += 15 + this.level * 5;
+    }
+    return g;
   }
   dispose() { this.scene.remove(this.group); this.segments.forEach((s) => s.mesh.geometry?.dispose()); }
 }
