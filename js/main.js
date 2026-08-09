@@ -29,7 +29,7 @@ class Snake3DApp {
       hudGoalBar: document.getElementById('hud-goal-bar'), hudGoal: document.getElementById('hud-goal'),
     };
   }
-  _loadProgress() { try { return JSON.parse(localStorage.getItem('snake3d_campaign') || '{"max":1}'); } catch { return { max: 1 }; } }
+  _loadProgress() { try { return JSON.parse(localStorage.getItem('snake3d_campaign') || '{\"max\":1}'); } catch { return { max: 1 }; } }
   _saveProgress() { localStorage.setItem('snake3d_campaign', JSON.stringify(this.campaignProgress)); }
   async start() {
     this.i18n.apply(); this._bindUI(); this._buildWorlds(); this._buildLevels();
@@ -38,6 +38,8 @@ class Snake3DApp {
       onStateChange: (s) => this._onState(s), onScore: (s, c) => this._onScore(s, c),
       onGameOver: (d) => this._onGameOver(d), onLevelClear: (d) => this._onLevelClear(d),
       onGoal: (d) => this._onGoal(d), onStatus: (d) => this._onStatus(d),
+      onEvent: (d) => this._onEvent(d), onMission: (d) => this._onMission(d),
+      onProgress: (d) => this._onProgress(d),
     });
     this._setLoading(0.3, 'init'); await this.engine.init(); this._setLoading(1, 'ready');
     await new Promise((r) => setTimeout(r, 150)); this.engine.startLoop(); this._showScreen('menu');
@@ -47,7 +49,7 @@ class Snake3DApp {
     Object.values(WORLD_DEFS).forEach((w) => {
       const btn = document.createElement('button'); btn.className = 'world-card';
       const name = this.i18n.language === 'fa' ? w.nameFa : w.name;
-      btn.innerHTML = `<div class="world-name">${name}</div><div class="world-meta">${this.i18n.t('world_open')}</div>`;
+      btn.innerHTML = `<div class=\"world-name\">${name}</div><div class=\"world-meta\">${this.i18n.t('world_open')}</div>`;
       btn.addEventListener('click', () => { this.pendingMode = 'arcade'; this.engine.setWorld(w.id); this.engine.setMode('arcade'); this._play(); });
       grid.appendChild(btn);
     });
@@ -62,7 +64,7 @@ class Snake3DApp {
       const name = fa && lv.labelFa ? lv.labelFa : lv.label;
       const tip = fa && lv.tipFa ? lv.tipFa : (lv.tip || '');
       const g = lv.goal || {}; let goalTxt = g.type === 'score' ? `${g.value} pts` : g.type === 'length' ? `L${g.value}` : g.type === 'stars' ? `${g.value} ★` : g.type === 'crystals' ? `${g.value} ◆` : g.type === 'survive' ? `${g.value}s` : g.type === 'combo' ? `x${g.value}` : '';
-      btn.innerHTML = `<span class="lv-id">${lv.id}</span><span class="lv-name">${name}<span class="lv-tip">${tip}</span></span><span class="lv-goal">${goalTxt}</span>`;
+      btn.innerHTML = `<span class=\"lv-id\">${lv.id}</span><span class=\"lv-name\">${name}<span class=\"lv-tip\">${tip}</span></span><span class=\"lv-goal\">${goalTxt}</span>`;
       if (open) btn.addEventListener('click', () => { this.pendingMode = 'campaign'; this.pendingLevel = lv.id; this.engine.setMode('campaign'); this.engine.setLevel(lv.id); this._play(); });
       list.appendChild(btn);
     });
@@ -136,11 +138,48 @@ class Snake3DApp {
   }
   _onStatus(data) {
     if (!data) return;
-    const bite = document.getElementById('fx-bite'), spd = document.getElementById('fx-speed'), sh = document.getElementById('fx-shield'), riv = document.getElementById('rivals-count');
-    if (bite) { bite.classList.toggle('hidden', !(data.bite > 0)); bite.textContent = data.bite > 0 ? `BITE ${Math.ceil(data.bite)}s` : ''; }
-    if (spd) { spd.classList.toggle('hidden', !(data.speed > 0)); spd.textContent = data.speed > 0 ? `SPD ${Math.ceil(data.speed)}s` : ''; }
-    if (sh) { sh.classList.toggle('hidden', !(data.shield > 0)); sh.textContent = data.shield > 0 ? `SHIELD ${Math.ceil(data.shield)}s` : ''; }
+    const map = {
+      bite: ['fx-bite', 'BITE'], speed: ['fx-speed', 'SPD'], shield: ['fx-shield', 'SHIELD'],
+      magnet: ['fx-magnet', 'MAG'], ghost: ['fx-ghost', 'GHOST'], multiplier: ['fx-mult', 'x2'],
+      freeze: ['fx-freeze', 'FRZ'], golden_bite: ['fx-gbite', 'G-BITE'], double_xp: ['fx-xp', '2XP'],
+    };
+    for (const [k, [id, label]] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const v = data[k] || 0;
+      el.classList.toggle('hidden', !(v > 0));
+      el.textContent = v > 0 ? `${label} ${Math.ceil(v)}s` : '';
+    }
+    const riv = document.getElementById('rivals-count');
     if (riv) riv.textContent = data.rivals ?? 0;
+    const dist = document.getElementById('hud-distance');
+    if (dist) dist.textContent = data.distance ?? 0;
+    const zone = document.getElementById('hud-zone');
+    if (zone) zone.textContent = data.zone || '';
+  }
+  _onEvent(data) {
+    const el = document.getElementById('hud-event');
+    if (!el) return;
+    if (!data) { el.classList.add('hidden'); el.textContent = ''; return; }
+    el.classList.remove('hidden');
+    const fa = this.i18n.language === 'fa';
+    el.textContent = fa && data.labelFa ? data.labelFa : data.label;
+    el.style.borderColor = data.color || '#3dffb5';
+  }
+  _onMission(data) {
+    const el = document.getElementById('hud-mission');
+    if (!el) return;
+    if (!data) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    const fa = this.i18n.language === 'fa';
+    const label = fa && data.labelFa ? data.labelFa : data.label;
+    el.textContent = data.done ? `✓ ${label}` : `${label} (${data.progress}/${data.target})`;
+    el.classList.toggle('done', !!data.done);
+  }
+  _onProgress(data) {
+    if (!data) return;
+    const dist = document.getElementById('hud-distance');
+    if (dist) dist.textContent = data.distance ?? 0;
   }
   _onGoal(data) {
     if (!this.els.hudGoalBar || !this.els.hudGoal) return;
