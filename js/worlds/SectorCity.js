@@ -1,102 +1,78 @@
 /**
- * Sector Arena — playable premium mobile arena
+ * Premium arena builder — clean playfield, no dead decorations
  */
 
 import * as THREE from 'three';
 
+export const WORLD_DEFS = {
+  sectorCity: { id: 'sectorCity', name: 'Sector City', nameFa: 'شهر سکتور', bg: 0x0a1424, fog: 0x0a1424, fogDensity: 0.014, ground: 0x0e1a2e, gridA: 0x1a3a5c, gridB: 0x122438, ring: 0x2ee6ff, wall: 0x152438, accent: 0x3dffb5, bounds: 40 },
+  neonDistrict: { id: 'neonDistrict', name: 'Neon District', nameFa: 'منطقه نئون', bg: 0x120818, fog: 0x120818, fogDensity: 0.016, ground: 0x1a0e22, gridA: 0x5a2080, gridB: 0x2a1038, ring: 0xff4fd8, wall: 0x2a1238, accent: 0xff9a3c, bounds: 38 },
+  crystalReef: { id: 'crystalReef', name: 'Crystal Reef', nameFa: 'صخره کریستال', bg: 0x061820, fog: 0x061820, fogDensity: 0.015, ground: 0x0a2430, gridA: 0x1a6070, gridB: 0x0e3040, ring: 0x40f0d0, wall: 0x0e3040, accent: 0x80ffe0, bounds: 42 },
+  emberValley: { id: 'emberValley', name: 'Ember Valley', nameFa: 'دره اخگر', bg: 0x180a08, fog: 0x180a08, fogDensity: 0.015, ground: 0x221208, gridA: 0x603018, gridB: 0x301808, ring: 0xff8040, wall: 0x301808, accent: 0xffd060, bounds: 36 },
+  voidStation: { id: 'voidStation', name: 'Void Station', nameFa: 'ایستگاه خلاء', bg: 0x060610, fog: 0x060610, fogDensity: 0.012, ground: 0x0c0c1a, gridA: 0x303060, gridB: 0x181830, ring: 0x8090ff, wall: 0x181830, accent: 0xc0d0ff, bounds: 44 },
+  auroraPeak: { id: 'auroraPeak', name: 'Aurora Peak', nameFa: 'قله شفق', bg: 0x081218, fog: 0x081218, fogDensity: 0.013, ground: 0x0c1c28, gridA: 0x208060, gridB: 0x103040, ring: 0x50ffc0, wall: 0x103040, accent: 0xa0ffe0, bounds: 40 },
+};
+
 export class SectorCity {
-  constructor(scene) {
+  constructor(scene, worldId = 'sectorCity') {
     this.scene = scene;
-    this.bounds = 42;
+    this.def = WORLD_DEFS[worldId] || WORLD_DEFS.sectorCity;
+    this.bounds = this.def.bounds;
     this.group = new THREE.Group();
     scene.add(this.group);
     this._build();
   }
 
   _build() {
+    const d = this.def;
     const size = this.bounds * 2;
-
-    const groundGeo = new THREE.CircleGeometry(this.bounds + 2, 64);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x121a28, metalness: 0.15, roughness: 0.85,
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(this.bounds + 3, 72),
+      new THREE.MeshStandardMaterial({ color: d.ground, metalness: 0.2, roughness: 0.9 })
+    );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     this.group.add(ground);
 
-    const grid = new THREE.GridHelper(size, 42, 0x1e3a5f, 0x162033);
-    grid.position.y = 0.02;
+    const grid = new THREE.GridHelper(size, Math.floor(this.bounds / 1.5), d.gridA, d.gridB);
+    grid.position.y = 0.03;
     const mats = Array.isArray(grid.material) ? grid.material : [grid.material];
-    mats.forEach((m) => { m.opacity = 0.45; m.transparent = true; });
+    mats.forEach((m) => { m.opacity = 0.35; m.transparent = true; });
     this.group.add(grid);
 
-    const ringGeo = new THREE.RingGeometry(this.bounds - 0.6, this.bounds - 0.15, 96);
-    const ringMat = new THREE.MeshStandardMaterial({
-      color: 0x2ee6ff, emissive: 0x0a6080, emissiveIntensity: 0.35,
-      metalness: 0.5, roughness: 0.4, side: THREE.DoubleSide,
-    });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(this.bounds - 0.5, this.bounds - 0.1, 96),
+      new THREE.MeshStandardMaterial({ color: d.ring, emissive: d.ring, emissiveIntensity: 0.35, metalness: 0.5, roughness: 0.35, side: THREE.DoubleSide })
+    );
     ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.05;
+    ring.position.y = 0.06;
     this.group.add(ring);
 
-    const wallGeo = new THREE.CylinderGeometry(this.bounds, this.bounds, 1.2, 64, 1, true);
-    const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x1a2740, emissive: 0x0a1830, emissiveIntensity: 0.2,
-      metalness: 0.3, roughness: 0.6, side: THREE.DoubleSide, transparent: true, opacity: 0.85,
-    });
-    const wall = new THREE.Mesh(wallGeo, wallMat);
-    wall.position.y = 0.6;
+    const wall = new THREE.Mesh(
+      new THREE.CylinderGeometry(this.bounds, this.bounds, 0.9, 64, 1, true),
+      new THREE.MeshStandardMaterial({ color: d.wall, emissive: d.wall, emissiveIntensity: 0.15, metalness: 0.25, roughness: 0.65, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+    );
+    wall.position.y = 0.45;
     this.group.add(wall);
 
-    const pillarGeo = new THREE.BoxGeometry(1.2, 3.5, 1.2);
-    const pillarMat = new THREE.MeshStandardMaterial({
-      color: 0x243550, metalness: 0.4, roughness: 0.5, emissive: 0x102030, emissiveIntensity: 0.25,
-    });
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + 0.2;
-      const r = this.bounds - 6;
-      const p = new THREE.Mesh(pillarGeo, pillarMat);
-      p.position.set(Math.cos(a) * r, 1.75, Math.sin(a) * r);
-      p.castShadow = true;
-      p.receiveShadow = true;
-      this.group.add(p);
-      const cap = new THREE.Mesh(
-        new THREE.BoxGeometry(1.4, 0.2, 1.4),
-        new THREE.MeshStandardMaterial({ color: 0x3dffb5, emissive: 0x1a8060, emissiveIntensity: 0.5 })
-      );
-      cap.position.set(Math.cos(a) * r, 3.6, Math.sin(a) * r);
-      this.group.add(cap);
-    }
-
-    const padGeo = new THREE.CylinderGeometry(4, 4.5, 0.25, 32);
-    const padMat = new THREE.MeshStandardMaterial({
-      color: 0x1a2840, metalness: 0.35, roughness: 0.55, emissive: 0x0c1830, emissiveIntensity: 0.25,
-    });
-    const pad = new THREE.Mesh(padGeo, padMat);
-    pad.position.y = 0.12;
-    pad.receiveShadow = true;
+    const pad = new THREE.Mesh(
+      new THREE.CircleGeometry(3.2, 32),
+      new THREE.MeshStandardMaterial({ color: d.ground, emissive: d.accent, emissiveIntensity: 0.12, metalness: 0.3, roughness: 0.6 })
+    );
+    pad.rotation.x = -Math.PI / 2;
+    pad.position.y = 0.04;
     this.group.add(pad);
-
-    const dotGeo = new THREE.CircleGeometry(0.35, 12);
-    const dotMat = new THREE.MeshStandardMaterial({
-      color: 0x3dffb5, emissive: 0x1a8060, emissiveIntensity: 0.4, transparent: true, opacity: 0.7,
-    });
-    for (let i = 0; i < 24; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = 8 + Math.random() * (this.bounds - 12);
-      const d = new THREE.Mesh(dotGeo, dotMat);
-      d.rotation.x = -Math.PI / 2;
-      d.position.set(Math.cos(a) * r, 0.04, Math.sin(a) * r);
-      this.group.add(d);
-    }
-
     this._t = 0;
   }
 
+  applySceneTheme(scene) {
+    const d = this.def;
+    scene.background = new THREE.Color(d.bg);
+    scene.fog = new THREE.FogExp2(d.fog, d.fogDensity);
+  }
+
   checkCollision(pos, radius = 0.3) {
-    return Math.hypot(pos.x, pos.z) + radius > this.bounds - 0.5;
+    return Math.hypot(pos.x, pos.z) + radius > this.bounds - 0.45;
   }
 
   update(dt, time) { this._t = time; }
