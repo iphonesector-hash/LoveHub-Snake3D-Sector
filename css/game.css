@@ -34,13 +34,35 @@ html, body, #game-root { width:100%; height:100%; margin:0; overflow:hidden; tou
 .hud-btn { pointer-events:auto; background:rgba(16,22,38,0.88); border:1px solid var(--border); color:#fff; border-radius:12px; padding:8px 12px; }
 .hud-goal-bar { margin-top: 8px; display: inline-flex; max-width: 92%; background: rgba(16,22,38,0.9); border: 1px solid rgba(46,230,255,0.25); border-radius: 12px; padding: 6px 12px; font-size: 12px; color: rgba(255,255,255,0.88); }
 .hud-goal-bar.hidden { display: none !important; }
-.hud-fx { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
-.fx-badge { background: rgba(16,22,38,0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 700; }
+.hud-fx { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; max-width: 92%; }
+.fx-badge { background: rgba(16,22,38,0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 3px 8px; font-size: 10px; font-weight: 700; }
 .fx-badge.bite { border-color: #ff4060; color: #ff8090; }
 .fx-badge.speed { border-color: #40a0ff; color: #80c0ff; }
 .fx-badge.shield { border-color: #60ffb0; color: #90ffd0; }
-.fx-badge.rivals { color: rgba(255,255,255,0.7); }
+.fx-badge.magnet { border-color: #e060e0; color: #ff80ff; }
+.fx-badge.ghost { border-color: #a0a0e0; color: #c0c0ff; }
+.fx-badge.mult { border-color: #e0b020; color: #ffd040; }
+.fx-badge.freeze { border-color: #60c0e0; color: #80e0ff; }
+.fx-badge.gbite { border-color: #e0a010; color: #ffc020; }
+.fx-badge.xp { border-color: #40e090; color: #80ffc0; }
+.fx-badge.rivals { color: #ff9a9a; }
 .fx-badge.hidden { display: none !important; }
+.hud-meta { display:flex; gap:10px; font-size:11px; opacity:.85; margin-top:4px; }
+.hud-zone { text-transform:capitalize; color:#a0d0ff; }
+.hud-event {
+  margin-top:6px; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;
+  background:rgba(0,0,0,.5); border:1px solid #3dffb5; color:#fff; text-align:center;
+  max-width: 90%; animation: hudPulse 1.2s ease-in-out infinite;
+}
+.hud-event.hidden { display: none !important; }
+.hud-mission {
+  margin-top:4px; padding:3px 8px; border-radius:6px; font-size:11px;
+  background:rgba(20,40,60,.7); border:1px solid rgba(100,180,255,.35); color:#c0e0ff;
+  max-width: 90%;
+}
+.hud-mission.hidden { display: none !important; }
+.hud-mission.done { border-color:#60ffb0; color:#80ffc0; }
+@keyframes hudPulse { 0%,100%{ opacity:1 } 50%{ opacity:.7 } }
 .loading-content { text-align:center; width:220px; }
 .loading-snake { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,var(--sector),var(--accent)); margin:0 auto 20px; animation:spin 1.2s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
@@ -66,3 +88,7 @@ html, body, #game-root { width:100%; height:100%; margin:0; overflow:hidden; tou
 [dir=rtl] .hud-top { flex-direction:row-reverse; }
 [dir=rtl] .menu-stats { flex-direction:row-reverse; }
 [dir=rtl] .level-card { text-align:right; }
+@media (max-height: 500px) {
+  .hud { padding-top: calc(8px + env(safe-area-inset-top,0px)); }
+  .fx-badge { font-size:9px; padding:2px 6px; }
+}
