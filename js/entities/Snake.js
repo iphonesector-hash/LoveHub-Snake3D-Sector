@@ -1,5 +1,5 @@
 /**
- * Snake — Snake.io-style continuous movement + path-history body
+ * Snake — continuous movement + path-history body
  */
 
 import * as THREE from 'three';
@@ -27,6 +27,7 @@ export class Snake {
     this.speed = BASE_SPEED;
     this.targetSpeed = BASE_SPEED;
     this.boosting = false;
+    this.speedMult = 1;
     this.alive = true;
     this.length = options.startLength || 6;
     this.score = 0;
@@ -69,6 +70,7 @@ export class Snake {
     this.speed = BASE_SPEED;
     this.targetSpeed = BASE_SPEED;
     this.boosting = false;
+    this.speedMult = this.speedMult || 1;
     this.alive = true;
     this.mass = this.length;
   }
@@ -116,7 +118,8 @@ export class Snake {
       }
     }
     this.boosting = !!boostHeld;
-    this.targetSpeed = this.boosting ? BOOST_SPEED : BASE_SPEED;
+    const base = this.boosting ? BOOST_SPEED : BASE_SPEED;
+    this.targetSpeed = base * (this.speedMult || 1);
     if (this.speed < this.targetSpeed) this.speed = Math.min(this.targetSpeed, this.speed + ACCEL * dt);
     else if (this.speed > this.targetSpeed) this.speed = Math.max(this.targetSpeed, this.speed - DECEL * dt);
     const head = this.segments[0];
