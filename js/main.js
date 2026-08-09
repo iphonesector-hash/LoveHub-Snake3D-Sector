@@ -41,6 +41,8 @@ class Snake3DApp {
       levelLabel: document.getElementById('level-label'),
       hudTimer: document.getElementById('hud-timer'),
       timerValue: document.getElementById('timer-value'),
+      hudGoalBar: document.getElementById('hud-goal-bar'),
+      hudGoal: document.getElementById('hud-goal'),
     };
   }
 
@@ -63,6 +65,7 @@ class Snake3DApp {
       onScore: (score, combo) => this._onScore(score, combo),
       onGameOver: (data) => this._onGameOver(data),
       onLevelClear: (data) => this._onLevelClear(data),
+      onGoal: (data) => this._onGoal(data),
     });
     this._setLoading(0.3, 'init');
     await this.engine.init();
@@ -95,12 +98,30 @@ class Snake3DApp {
     const list = document.getElementById('level-list');
     if (!list) return;
     list.innerHTML = '';
+    const fa = this.i18n.language === 'fa';
     LEVELS.forEach((lv) => {
       const open = lv.id <= (this.campaignProgress.max || 1);
       const btn = document.createElement('button');
       btn.className = 'level-card' + (open ? '' : ' locked');
       btn.disabled = !open;
-      btn.innerHTML = `<span class="lv-id">${lv.id}</span><span class="lv-name">${lv.label}</span><span class="lv-goal">${lv.targetScore} pts</span>`;
+      const name = fa && lv.labelFa ? lv.labelFa : lv.label;
+      const tip = fa && lv.tipFa ? lv.tipFa : (lv.tip || '');
+      const g = lv.goal || {};
+      let goalTxt = '';
+      if (g.type === 'score') goalTxt = `${g.value} pts`;
+      else if (g.type === 'length') goalTxt = `L${g.value}`;
+      else if (g.type === 'stars') goalTxt = `${g.value} ★`;
+      else if (g.type === 'crystals') goalTxt = `${g.value} ◆`;
+      else if (g.type === 'survive') goalTxt = `${g.value}s`;
+      else if (g.type === 'combo') goalTxt = `x${g.value}`;
+      const mods = [];
+      if (lv.mods?.noBoost) mods.push(fa ? 'بدون شتاب' : 'No boost');
+      if (lv.mods?.hazards) mods.push(fa ? 'خطر' : 'Hazards');
+      if (lv.mods?.boundsScale && lv.mods.boundsScale < 1) mods.push(fa ? 'آرنا کوچک' : 'Tight');
+      if (lv.mods?.timeLimit) mods.push(`${lv.mods.timeLimit}s`);
+      if (lv.mods?.speed > 1.1) mods.push(fa ? 'سریع' : 'Fast');
+      const modStr = mods.length ? ' · ' + mods.join(', ') : '';
+      btn.innerHTML = `<span class="lv-id">${lv.id}</span><span class="lv-name">${name}<span class="lv-tip">${tip}${modStr}</span></span><span class="lv-goal">${goalTxt}</span>`;
       if (open) {
         btn.addEventListener('click', () => {
           this.pendingMode = 'campaign';
@@ -137,7 +158,7 @@ class Snake3DApp {
         this.engine.setMode('campaign'); this.engine.setLevel(this.nextAfterClear); this._play();
       } else this._toMenu();
     });
-    const setLang = (lang) => { this.i18n.setLanguage(lang); this._updateLangButtons(); this._buildWorlds(); };
+    const setLang = (lang) => { this.i18n.setLanguage(lang); this._updateLangButtons(); this._buildWorlds(); this._buildLevels(); };
     document.getElementById('btn-lang-en')?.addEventListener('click', () => setLang('en'));
     document.getElementById('btn-lang-fa')?.addEventListener('click', () => setLang('fa'));
     document.getElementById('btn-set-en')?.addEventListener('click', () => setLang('en'));
@@ -182,7 +203,6 @@ class Snake3DApp {
       this.els.hud?.classList.remove('hidden');
       const camp = this.pendingMode === 'campaign';
       this.els.hudLevel?.classList.toggle('hidden', !camp);
-      this.els.hudTimer?.classList.toggle('hidden', !camp);
       if (camp && this.els.levelLabel) this.els.levelLabel.textContent = `Lv ${this.pendingLevel}`;
     } else if (s === GameState.PAUSED) this.els.pause?.classList.remove('hidden');
     else if (s === GameState.GAMEOVER) { this.els.gameover?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
@@ -203,6 +223,26 @@ class Snake3DApp {
       if (t > 0) { this.els.hudTimer?.classList.remove('hidden'); this.els.timerValue.textContent = Math.ceil(t); }
       else this.els.hudTimer?.classList.add('hidden');
     }
+  }
+
+  _onGoal(data) {
+    if (!this.els.hudGoalBar || !this.els.hudGoal) return;
+    if (!data || !data.level) {
+      this.els.hudGoalBar.classList.add('hidden');
+      return;
+    }
+    this.els.hudGoalBar.classList.remove('hidden');
+    const g = data.level.goal;
+    const p = data.progress || {};
+    const fa = this.i18n.language === 'fa';
+    let text = '';
+    if (g.type === 'score') text = fa ? `امتیاز ${p.score || 0}/${g.value}` : `Score ${p.score || 0}/${g.value}`;
+    else if (g.type === 'length') text = fa ? `طول ${p.length || 0}/${g.value}` : `Length ${p.length || 0}/${g.value}`;
+    else if (g.type === 'stars') text = fa ? `ستاره ${p.stars || 0}/${g.value}` : `Stars ${p.stars || 0}/${g.value}`;
+    else if (g.type === 'crystals') text = fa ? `کریستال ${p.crystals || 0}/${g.value}` : `Crystals ${p.crystals || 0}/${g.value}`;
+    else if (g.type === 'survive') text = fa ? `زنده ${Math.floor(p.survive || 0)}/${g.value}ث` : `Survive ${Math.floor(p.survive || 0)}/${g.value}s`;
+    else if (g.type === 'combo') text = fa ? `کمبو x${(p.combo || 1).toFixed(1)} / x${g.value}` : `Combo x${(p.combo || 1).toFixed(1)} / x${g.value}`;
+    this.els.hudGoal.textContent = text;
   }
 
   async _onGameOver(data) {
