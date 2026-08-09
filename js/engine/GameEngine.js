@@ -36,6 +36,7 @@ export class GameEngine {
     this.onEvent = options.onEvent || (() => {});
     this.onMission = options.onMission || (() => {});
     this.onProgress = options.onProgress || (() => {});
+    this.onWorldEnter = options.onWorldEnter || (() => {});
     this._headPos = new THREE.Vector3(); this._aiHead = new THREE.Vector3();
     this._camTarget = new THREE.Vector3(); this._look = new THREE.Vector3(); this._lookSmooth = new THREE.Vector3();
     this._particles = []; this.population = null; this.events = null; this.missions = null;
@@ -121,7 +122,10 @@ export class GameEngine {
       this.levelTimer = m.timeLimit || 0;
     } else this.levelTimer = 0;
     if (worldId !== this.world?.def?.id) this._loadWorld(worldId); else this.world.applySceneTheme(this.scene);
-    this.snake.reset(6); this.snake.speedMult = this.activeMods.speed || 1; this.snake._baseSpeedMult = this.snake.speedMult;
+    this.snake.reset(6);
+    const worldSpeed = (this.world?.def?.speedBias) || 1;
+    this.snake.speedMult = (this.activeMods.speed || 1) * worldSpeed;
+    this.snake._baseSpeedMult = this.snake.speedMult;
     this._clearFoods(); this._clearPowerUps(); this._clearAIs();
     for (let i = 0; i < 25; i++) {
       const ang = Math.random() * Math.PI * 2, r = 8 + Math.random() * 40;
@@ -130,10 +134,11 @@ export class GameEngine {
     }
     for (let i = 0; i < 5; i++) {
       const ang = Math.random() * Math.PI * 2, r = 15 + Math.random() * 35;
-      const pu = spawnPowerUp(this.scene);
+      const pu = spawnPowerUp(this.scene, this.world?.def?.powerBias || null);
       pu._x = Math.cos(ang) * r; pu._z = Math.sin(ang) * r; pu.mesh.position.set(pu._x, 0.55, pu._z); this.powerUps.push(pu);
     }
     this.events.reset(); this.missions.start();
+    if (this.world?.def) this.onWorldEnter(this.world.def);
     this.input.setEnabled(true); this.input.showControls(!this.activeMods.noBoost);
     this.setState(GameState.PLAYING); this.clock.start(); this._emitGoal(); this._emitStatus();
   }

@@ -40,6 +40,7 @@ class Snake3DApp {
       onGoal: (d) => this._onGoal(d), onStatus: (d) => this._onStatus(d),
       onEvent: (d) => this._onEvent(d), onMission: (d) => this._onMission(d),
       onProgress: (d) => this._onProgress(d),
+      onWorldEnter: (d) => this._onWorldEnter(d),
     });
     this._setLoading(0.3, 'init'); await this.engine.init(); this._setLoading(1, 'ready');
     await new Promise((r) => setTimeout(r, 150)); this.engine.startLoop(); this._showScreen('menu');
@@ -180,6 +181,19 @@ class Snake3DApp {
     if (!data) return;
     const dist = document.getElementById('hud-distance');
     if (dist) dist.textContent = data.distance ?? 0;
+  }
+  _onWorldEnter(def) {
+    if (!def) return;
+    const el = document.getElementById('hud-world-banner');
+    if (!el) return;
+    const fa = this.i18n.language === 'fa';
+    const title = fa && def.nameFa ? def.nameFa : def.name;
+    const sub = fa && def.taglineFa ? def.taglineFa : (def.tagline || '');
+    el.innerHTML = '<div class="wb-title">' + title + '</div><div class="wb-sub">' + sub + '</div>';
+    el.classList.remove('hidden');
+    el.style.borderColor = def.accent ? '#' + Number(def.accent).toString(16).padStart(6, '0') : '#2ee6ff';
+    clearTimeout(this._wbTimer);
+    this._wbTimer = setTimeout(function() { el.classList.add('hidden'); }, 3200);
   }
   _onGoal(data) {
     if (!this.els.hudGoalBar || !this.els.hudGoal) return;
