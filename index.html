@@ -4,21 +4,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0c1018">
+  <meta name="theme-color" content="#0a1424">
   <title>LoveHub Snake 3D — Sector Edition</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style id="boot-critical">
-    .hidden { display: none !important; }
-    body { margin: 0; background: #0c1018; color: #fff; font-family: system-ui, sans-serif; overflow: hidden; touch-action: none; }
-    .joystick-zone { position:absolute; z-index:6; width:128px; height:128px; pointer-events:none; }
-    .joystick-base { width:100%; height:100%; border-radius:50%; background:rgba(255,255,255,.08); border:2px solid rgba(0,212,255,.28); position:relative; }
-    .joystick-knob { position:absolute; width:54px; height:54px; border-radius:50%; background:rgba(0,212,255,.4); border:2px solid rgba(255,255,255,.45); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
-    .boost-btn { position:absolute; z-index:6; width:76px; height:76px; border-radius:50%; border:2px solid rgba(255,170,68,.5); background:rgba(255,140,40,.22); color:#ffd7a0; font-weight:800; font-size:12px; bottom:calc(36px + env(safe-area-inset-bottom,0px)); right:calc(16px + env(safe-area-inset-right,0px)); touch-action:none; }
-    .boost-btn.active { background:rgba(255,140,40,.6); color:#fff; }
-    .boost-btn.hidden, .joystick-zone.hidden { display:none !important; }
+    .hidden{display:none!important}
+    body{margin:0;background:#0a1424;color:#fff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:none}
+    .boost-btn{position:absolute;z-index:6;width:72px;height:72px;border-radius:50%;border:2px solid rgba(255,170,68,.5);background:rgba(255,140,40,.22);color:#ffd7a0;font-weight:800;font-size:11px;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:calc(14px + env(safe-area-inset-right,0px));touch-action:none}
+    .boost-btn.active{background:rgba(255,140,40,.6);color:#fff}
+    .boost-btn.hidden{display:none!important}
+    .boost-btn.side-left{right:auto;left:calc(14px + env(safe-area-inset-left,0px))}
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@9c64bb6f6a4226eda1342266522cdde2f62e3318/css/game.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@2f4955246a2c72a13d80ca75f50c33a85572936d/css/game.css">
 </head>
 <body>
   <div id="game-root">
@@ -28,20 +25,19 @@
         <div class="hud-score"><span class="label" data-i18n="score">Score</span><span id="score-value">0</span></div>
         <div class="hud-mass"><span class="label" data-i18n="mass">Mass</span><span id="mass-value">6</span></div>
         <div class="hud-combo hidden" id="combo-display"><span id="combo-value">x1</span></div>
-        <div class="hud-right"><button id="btn-pause" class="hud-btn" aria-label="Pause">❚❚</button></div>
+        <div class="hud-level hidden" id="hud-level"><span id="level-label">Lv 1</span></div>
+        <div class="hud-timer hidden" id="hud-timer"><span id="timer-value">0</span></div>
+        <div class="hud-right"><button id="btn-pause" class="hud-btn">❚❚</button></div>
       </div>
-      <div class="hud-bottom"><div id="objective" class="objective" data-i18n="objective_collect">Touch anywhere to steer</div></div>
     </div>
     <div id="screen-menu" class="screen">
       <div class="menu-content">
-        <div class="logo-area">
-          <div class="sector-badge">SECTOR</div>
-          <h1 class="game-title">SNAKE 3D</h1>
-          <p class="game-subtitle" data-i18n="subtitle">LoveHub Edition</p>
-        </div>
+        <div class="sector-badge">SECTOR</div>
+        <h1 class="game-title">SNAKE 3D</h1>
+        <p class="game-subtitle" data-i18n="subtitle">LoveHub Edition</p>
         <div class="menu-buttons">
           <button id="btn-play" class="btn btn-primary" data-i18n="play">PLAY</button>
-          <button id="btn-duo" class="btn btn-secondary" data-i18n="duo">2 PLAYERS</button>
+          <button id="btn-campaign" class="btn btn-secondary" data-i18n="campaign">CAMPAIGN</button>
           <button id="btn-worlds" class="btn btn-secondary" data-i18n="worlds">WORLDS</button>
           <button id="btn-settings" class="btn btn-ghost" data-i18n="settings">SETTINGS</button>
         </div>
@@ -56,15 +52,17 @@
         </div>
       </div>
     </div>
+    <div id="screen-campaign" class="screen hidden">
+      <div class="panel panel-wide">
+        <h2 data-i18n="campaign">CAMPAIGN</h2>
+        <div id="level-list" class="level-list"></div>
+        <button id="btn-campaign-back" class="btn btn-ghost" data-i18n="back">BACK</button>
+      </div>
+    </div>
     <div id="screen-worlds" class="screen hidden">
       <div class="panel panel-wide">
         <h2 data-i18n="worlds">WORLDS</h2>
-        <div class="world-grid">
-          <button class="world-card active" data-world="sectorCity"><div class="world-name">Sector City</div><div class="world-meta" data-i18n="world_open">Playable</div></button>
-          <button class="world-card locked" disabled><div class="world-name">Neon District</div><div class="world-meta" data-i18n="world_locked">Locked</div></button>
-          <button class="world-card locked" disabled><div class="world-name">Crystal Reef</div><div class="world-meta" data-i18n="world_locked">Locked</div></button>
-          <button class="world-card locked" disabled><div class="world-name">Void Station</div><div class="world-meta" data-i18n="world_locked">Locked</div></button>
-        </div>
+        <div id="world-grid" class="world-grid"></div>
         <button id="btn-worlds-back" class="btn btn-ghost" data-i18n="back">BACK</button>
       </div>
     </div>
@@ -72,9 +70,8 @@
       <div class="panel panel-wide">
         <h2 data-i18n="settings">SETTINGS</h2>
         <div class="setting-row"><span data-i18n="language">Language</span><div class="lang-switch"><button id="btn-set-en" class="lang-btn active">EN</button><button id="btn-set-fa" class="lang-btn">فا</button></div></div>
-        <div class="setting-row"><span data-i18n="joystick_side">Boost side</span><button id="btn-set-joy" class="btn btn-secondary btn-sm">LEFT / RIGHT</button></div>
+        <div class="setting-row"><span data-i18n="boost_side">Boost side</span><button id="btn-set-joy" class="btn btn-secondary btn-sm">LEFT / RIGHT</button></div>
         <div class="setting-row"><span data-i18n="sensitivity">Sensitivity</span><input id="input-sens" type="range" min="50" max="150" value="100" /></div>
-        <p class="setting-hint" data-i18n="controls_hint">Touch anywhere to steer. Hold BOOST. Duo: 2nd finger or IJKL + B.</p>
         <button id="btn-settings-back" class="btn btn-ghost" data-i18n="back">BACK</button>
       </div>
     </div>
@@ -90,25 +87,29 @@
       <div class="panel">
         <h2 data-i18n="game_over">GAME OVER</h2>
         <div class="result-score"><span class="label" data-i18n="score">Score</span><span id="final-score">0</span></div>
-        <div id="duo-result" class="result-best hidden"></div>
         <div class="result-best"><span data-i18n="best_score">Best</span>: <span id="final-best">0</span></div>
         <button id="btn-retry" class="btn btn-primary" data-i18n="retry">RETRY</button>
         <button id="btn-menu" class="btn btn-secondary" data-i18n="menu">MENU</button>
+      </div>
+    </div>
+    <div id="screen-levelclear" class="screen hidden">
+      <div class="panel">
+        <h2 data-i18n="level_clear">LEVEL CLEAR</h2>
+        <div class="result-score"><span class="label" data-i18n="score">Score</span><span id="clear-score">0</span></div>
+        <button id="btn-next-level" class="btn btn-primary" data-i18n="next_level">NEXT</button>
+        <button id="btn-clear-menu" class="btn btn-secondary" data-i18n="menu">MENU</button>
       </div>
     </div>
     <div id="screen-loading" class="screen">
       <div class="loading-content">
         <div class="loading-snake"></div>
         <div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div>
-        <p id="loading-tip" data-i18n="loading">Loading Sector Arena...</p>
+        <p id="loading-tip" data-i18n="loading">Loading…</p>
       </div>
-    </div>
-    <div id="joystick-zone" class="joystick-zone hidden">
-      <div id="joystick-base" class="joystick-base"><div id="joystick-knob" class="joystick-knob"></div></div>
     </div>
     <button id="btn-boost" class="boost-btn hidden" type="button">BOOST</button>
   </div>
   <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
-  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@9c64bb6f6a4226eda1342266522cdde2f62e3318/js/main.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/iphonesector-hash/LoveHub-Snake3D-Sector@2f4955246a2c72a13d80ca75f50c33a85572936d/js/main.js"></script>
 </body>
 </html>
