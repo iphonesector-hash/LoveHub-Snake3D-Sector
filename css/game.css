@@ -47,7 +47,7 @@ html, body, #game-root { width:100%; height:100%; margin:0; overflow:hidden; tou
 .fx-badge.xp { border-color: #40e090; color: #80ffc0; }
 .fx-badge.rivals { color: #ff9a9a; }
 .fx-badge.hidden { display: none !important; }
-.hud-meta { display:flex; gap:10px; font-size:11px; opacity:.85; margin-top:4px; }
+.hud-meta { display:flex; gap:10px; font-size:11px; opacity:.85; margin-top:4px; flex-wrap:wrap; }
 .hud-zone { text-transform:capitalize; color:#a0d0ff; }
 .hud-event {
   margin-top:6px; padding:4px 10px; border-radius:8px; font-size:12px; font-weight:700;
@@ -62,7 +62,6 @@ html, body, #game-root { width:100%; height:100%; margin:0; overflow:hidden; tou
 }
 .hud-mission.hidden { display: none !important; }
 .hud-mission.done { border-color:#60ffb0; color:#80ffc0; }
-@keyframes hudPulse { 0%,100%{ opacity:1 } 50%{ opacity:.7 } }
 .hud-world-banner {
   position: absolute; top: 28%; left: 50%; transform: translateX(-50%);
   text-align: center; pointer-events: none; z-index: 6;
@@ -74,6 +73,29 @@ html, body, #game-root { width:100%; height:100%; margin:0; overflow:hidden; tou
 .hud-world-banner .wb-title { font-size: 18px; font-weight: 800; letter-spacing: 0.08em; color: #fff; }
 .hud-world-banner .wb-sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 4px; letter-spacing: 0.15em; }
 @keyframes wbIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@keyframes hudPulse { 0%,100%{ opacity:1 } 50%{ opacity:.7 } }
+.hud-tier {
+  background: rgba(16,22,38,0.9); border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+}
+.hud-tier.hidden { display: none !important; }
+.hud-streak {
+  background: rgba(40,30,10,0.9); border: 1px solid #ffd060;
+  border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #ffd060;
+}
+.hud-streak.hidden { display: none !important; }
+.hud-landmark {
+  color: #a0ffe0; font-size: 11px; font-weight: 600;
+}
+.hud-landmark.hidden { display: none !important; }
+.hud-toast {
+  position: absolute; top: 42%; left: 50%; transform: translateX(-50%);
+  padding: 8px 18px; border-radius: 12px; font-size: 13px; font-weight: 800;
+  background: rgba(8,14,28,0.85); border: 1px solid #ffd060; color: #ffd060;
+  pointer-events: none; z-index: 7; letter-spacing: 0.06em;
+  animation: wbIn 0.25s ease-out;
+}
+.hud-toast.hidden { display: none !important; }
 .loading-content { text-align:center; width:220px; }
 .loading-snake { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,var(--sector),var(--accent)); margin:0 auto 20px; animation:spin 1.2s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
