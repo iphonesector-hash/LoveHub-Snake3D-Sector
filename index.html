@@ -24,6 +24,8 @@
       <div class="hud-top">
         <div class="hud-score"><span class="label" data-i18n="score">Score</span><span id="score-value">0</span></div>
         <div class="hud-mass"><span class="label" data-i18n="mass">Mass</span><span id="mass-value">6</span></div>
+        <div class="hud-xp"><span class="label">XP</span><span id="xp-value">0</span></div>
+        <div class="hud-plvl"><span class="label">Lv</span><span id="plvl-value">1</span></div>
         <div class="hud-combo hidden" id="combo-display"><span id="combo-value">x1</span></div>
         <div class="hud-tier hidden" id="hud-tier">SAFE</div>
         <div class="hud-streak hidden" id="hud-streak">3x STREAK</div>
@@ -52,6 +54,7 @@
         <span class="hud-dist">⇄ <span id="hud-distance">0</span></span>
         <span id="hud-zone" class="hud-zone"></span>
         <span id="hud-landmark" class="hud-landmark hidden"></span>
+        <span class="hud-coins-live">💰 <span id="hud-coins">0</span></span>
       </div>
       <div id="hud-toast" class="hud-toast hidden"></div>
       <div id="hud-world-banner" class="hud-world-banner hidden"></div>
@@ -96,7 +99,20 @@
       <button id="btn-settings-back" class="btn btn-ghost" data-i18n="back">BACK</button>
     </div></div>
     <div id="screen-pause" class="screen hidden"><div class="panel"><h2 data-i18n="paused">PAUSED</h2><button id="btn-resume" class="btn btn-primary" data-i18n="resume">RESUME</button><button id="btn-restart" class="btn btn-secondary" data-i18n="restart">RESTART</button><button id="btn-quit" class="btn btn-ghost" data-i18n="quit">QUIT</button></div></div>
-    <div id="screen-gameover" class="screen hidden"><div class="panel"><h2 data-i18n="game_over">GAME OVER</h2><div class="result-score"><span class="label" data-i18n="score">Score</span><span id="final-score">0</span></div><div class="result-best"><span data-i18n="best_score">Best</span>: <span id="final-best">0</span></div><button id="btn-retry" class="btn btn-primary" data-i18n="retry">RETRY</button><button id="btn-menu" class="btn btn-secondary" data-i18n="menu">MENU</button></div></div>
+    <div id="screen-gameover" class="screen hidden"><div class="panel">
+      <h2 data-i18n="game_over">GAME OVER</h2>
+      <div class="result-score"><span class="label" data-i18n="score">Score</span><span id="final-score">0</span></div>
+      <div class="result-stats" id="go-stats">
+        <div class="rs"><span class="rs-l">Mass</span><span id="go-mass">0</span></div>
+        <div class="rs"><span class="rs-l">XP</span><span id="go-xp">0</span></div>
+        <div class="rs"><span class="rs-l">Coins</span><span id="go-coins">0</span></div>
+        <div class="rs"><span class="rs-l">Kills</span><span id="go-kills">0</span></div>
+        <div class="rs"><span class="rs-l">Dist</span><span id="go-dist">0</span></div>
+      </div>
+      <div class="result-best"><span data-i18n="best_score">Best</span>: <span id="final-best">0</span></div>
+      <button id="btn-retry" class="btn btn-primary" data-i18n="retry">RETRY</button>
+      <button id="btn-menu" class="btn btn-secondary" data-i18n="menu">MENU</button>
+    </div></div>
     <div id="screen-levelclear" class="screen hidden"><div class="panel"><h2 data-i18n="level_clear">LEVEL CLEAR</h2><div class="result-score"><span class="label" data-i18n="score">Score</span><span id="clear-score">0</span></div><button id="btn-next-level" class="btn btn-primary" data-i18n="next_level">NEXT</button><button id="btn-clear-menu" class="btn btn-secondary" data-i18n="menu">MENU</button></div></div>
     <div id="screen-loading" class="screen"><div class="loading-content"><div class="loading-snake"></div><div class="loading-bar"><div class="loading-fill" id="loading-fill"></div></div><p id="loading-tip" data-i18n="loading">Loading…</p></div></div>
     <button id="btn-boost" class="boost-btn hidden" type="button">BOOST</button>
