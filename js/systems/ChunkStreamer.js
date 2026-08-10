@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ZONE_TYPES } from '../worlds/WorldDefs.js';
 import { WorldObstacle } from '../entities/WorldObstacle.js';
+import { groundMatForTheme, propCountForTheme, makeThemeProp } from './WorldThemes.js';
 
 export const CHUNK_SIZE = 48;
 const ACTIVE_RADIUS = 2;
@@ -58,7 +59,7 @@ export class ChunkStreamer {
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(CHUNK_SIZE - 0.35, CHUNK_SIZE - 0.35, 2, 2),
-      this._groundMat(theme, zone, d)
+      groundMatForTheme(theme, zone, d)
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.set(ox, 0, oz);
@@ -72,14 +73,14 @@ export class ChunkStreamer {
       g.add(grid);
     }
 
-    const baseProps = theme === 'neon' ? 6 : theme === 'crystal' ? 7 : theme === 'ember' ? 5 : theme === 'void' ? 5 : theme === 'aurora' ? 6 : 5;
+    const baseProps = propCountForTheme(theme);
     const propCount = zone === 'open' ? Math.max(2, baseProps - 2) : (zone === 'forest' || zone === 'crystal') ? baseProps + 1 : baseProps;
 
     for (let i = 0; i < propCount; i++) {
       const px = ox + (this._hash(cx + i * 3, cz - i) - 0.5) * CHUNK_SIZE * 0.82;
       const pz = oz + (this._hash(cx - i, cz + i * 5) - 0.5) * CHUNK_SIZE * 0.82;
       const seed = h + i * 0.07;
-      const { mesh, obs } = this._makeProp(px, pz, d, seed, theme, ck);
+      const { mesh, obs } = makeThemeProp(this.scene, px, pz, d, seed, theme, ck);
       if (mesh) g.add(mesh);
       if (obs) this._addObs(obs);
     }
@@ -149,91 +150,11 @@ export class ChunkStreamer {
   }
 
   _groundMat(theme, zone, d) {
-    if (theme === 'ember') {
-      return new THREE.MeshStandardMaterial({
-        color: zone === 'danger' ? 0x3a1008 : d.ground, metalness: 0.1, roughness: 0.9,
-        emissive: 0x2a0800, emissiveIntensity: zone === 'danger' ? 0.2 : 0.08,
-      });
-    }
-    if (theme === 'crystal') {
-      return new THREE.MeshStandardMaterial({
-        color: d.ground, metalness: 0.35, roughness: 0.25, emissive: d.accent, emissiveIntensity: 0.06,
-      });
-    }
-    if (theme === 'aurora') {
-      return new THREE.MeshStandardMaterial({
-        color: 0x0e2430, metalness: 0.15, roughness: 0.7, emissive: 0x081820, emissiveIntensity: 0.05,
-      });
-    }
-    if (theme === 'void') {
-      return new THREE.MeshStandardMaterial({
-        color: d.ground, metalness: 0.55, roughness: 0.4, emissive: 0x101028, emissiveIntensity: 0.08,
-      });
-    }
-    if (theme === 'neon') {
-      return new THREE.MeshStandardMaterial({
-        color: d.ground, metalness: 0.3, roughness: 0.55, emissive: d.accent, emissiveIntensity: 0.04,
-      });
-    }
-    return new THREE.MeshStandardMaterial({
-      color: d.ground, metalness: 0.2, roughness: 0.8,
-      emissive: zone === 'danger' ? d.accent : 0x000000, emissiveIntensity: zone === 'danger' ? 0.1 : 0,
-    });
+    return groundMatForTheme(theme, zone, d);
   }
 
   _makeProp(x, z, d, seed, theme, ck) {
-    const col = d.propColors[(Math.floor(seed * 10) % d.propColors.length)];
-    let mesh; let obs = null;
-    if (theme === 'cyber') {
-      const ht = 2.5 + seed * 10;
-      mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2 + seed * 0.7, ht, 1.2 + seed * 0.5),
-        new THREE.MeshStandardMaterial({ color: col, metalness: 0.55, roughness: 0.35, emissive: d.accent, emissiveIntensity: 0.15 + seed * 0.2 })
-      );
-      mesh.position.set(x, ht * 0.5, z);
-      obs = new WorldObstacle(this.scene, { type: 'box', x, z, halfW: 0.7 + seed * 0.35, halfD: 0.7 + seed * 0.25, solid: true, kind: 'building', chunkKey: ck });
-    } else if (theme === 'neon') {
-      const ht = 2 + seed * 8;
-      mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.0 + seed * 0.5, ht, 1.0 + seed * 0.4),
-        new THREE.MeshStandardMaterial({ color: col, metalness: 0.4, roughness: 0.4, emissive: d.accent, emissiveIntensity: 0.3 + seed * 0.35 })
-      );
-      mesh.position.set(x, ht * 0.5, z);
-      obs = new WorldObstacle(this.scene, { type: 'box', x, z, halfW: 0.6 + seed * 0.25, halfD: 0.6 + seed * 0.2, solid: true, kind: 'building', chunkKey: ck });
-    } else if (theme === 'crystal') {
-      const s = 0.9 + seed * 2.2;
-      mesh = new THREE.Mesh(
-        new THREE.OctahedronGeometry(s, 0),
-        new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.65, roughness: 0.12, emissive: d.accent, emissiveIntensity: 0.35 + seed * 0.25, transparent: true, opacity: 0.85 })
-      );
-      mesh.position.set(x, 0.9 + seed * 1.4, z); mesh.rotation.y = seed * 6;
-      obs = new WorldObstacle(this.scene, { type: 'circle', x, z, radius: s * 0.65, solid: true, kind: 'crystal', chunkKey: ck });
-    } else if (theme === 'ember') {
-      const ht = 1.5 + seed * 3.5;
-      mesh = new THREE.Mesh(
-        new THREE.ConeGeometry(0.8 + seed * 0.6, ht, 5),
-        new THREE.MeshStandardMaterial({ color: 0x2a1008, emissive: 0xff4020, emissiveIntensity: 0.25 + seed * 0.35, roughness: 0.7 })
-      );
-      mesh.position.set(x, ht * 0.45, z);
-      obs = new WorldObstacle(this.scene, { type: 'circle', x, z, radius: 0.9 + seed * 0.4, solid: true, kind: 'rock', chunkKey: ck });
-    } else if (theme === 'void') {
-      const ht = 2 + seed * 6;
-      mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.4, 0.65, ht, 6),
-        new THREE.MeshStandardMaterial({ color: col, metalness: 0.75, roughness: 0.28, emissive: d.accent, emissiveIntensity: 0.2 })
-      );
-      mesh.position.set(x, ht * 0.5, z);
-      obs = new WorldObstacle(this.scene, { type: 'cylinder', x, z, radius: 0.7, solid: true, kind: 'pillar', chunkKey: ck });
-    } else {
-      const ht = 2.5 + seed * 6;
-      mesh = new THREE.Mesh(
-        new THREE.ConeGeometry(0.5 + seed * 0.35, ht, 5),
-        new THREE.MeshStandardMaterial({ color: 0xd0f0ff, metalness: 0.35, roughness: 0.15, emissive: d.accent, emissiveIntensity: 0.2 + seed * 0.15, transparent: true, opacity: 0.82 })
-      );
-      mesh.position.set(x, ht * 0.45, z);
-      obs = new WorldObstacle(this.scene, { type: 'circle', x, z, radius: 0.6 + seed * 0.3, solid: true, kind: 'ice', chunkKey: ck });
-    }
-    return { mesh, obs };
+    return makeThemeProp(this.scene, x, z, d, seed, theme, ck);
   }
 
   _makeLandmark(ox, oz, d, theme, h, ck) {
