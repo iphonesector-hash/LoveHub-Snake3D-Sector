@@ -5,6 +5,7 @@ import { GameNetworkService } from './network/GameNetworkService.js';
 import { WORLD_DEFS } from './worlds/SectorCity.js';
 import { SNAKE_SKINS } from './entities/Snake.js';
 import { LEVELS } from './data/levels.js';
+import { audio } from './audio/AudioManager.js';
 
 class Snake3DApp {
   constructor() {
@@ -54,7 +55,7 @@ class Snake3DApp {
       const name = this.i18n.language === 'fa' ? w.nameFa : w.name;
       const tag = this.i18n.language === 'fa' ? (w.taglineFa || '') : (w.tagline || '');
       btn.innerHTML = '<div class=\"world-name\">' + name + '</div><div class=\"world-meta\">' + (tag || this.i18n.t('world_open')) + '</div>';
-      btn.addEventListener('click', () => { this.pendingMode = 'arcade'; this.engine.setWorld(w.id); this.engine.setMode('arcade'); this._play(); });
+      btn.addEventListener('click', () => { audio.unlock(); audio.enterWorld(w.id); this.pendingMode = 'arcade'; this.engine.setWorld(w.id); this.engine.setMode('arcade'); this._play(); });
       grid.appendChild(btn);
     });
   }
@@ -67,9 +68,9 @@ class Snake3DApp {
       btn.className = 'level-card' + (open ? '' : ' locked'); btn.disabled = !open;
       const name = fa && lv.labelFa ? lv.labelFa : lv.label;
       const tip = fa && lv.tipFa ? lv.tipFa : (lv.tip || '');
-      const g = lv.goal || {}; let goalTxt = g.type === 'score' ? g.value + ' pts' : g.type === 'length' ? 'L' + g.value : g.type === 'stars' ? g.value + ' *' : g.type === 'crystals' ? g.value + ' C' : g.type === 'survive' ? g.value + 's' : g.type === 'combo' ? 'x' + g.value : '';
+      const g = lv.goal || {}; let goalTxt = g.type === 'score' ? g.value + ' pts' : g.type === 'length' ? 'L' + g.value : g.type === 'stars' ? g.value + ' *' : g.type === 'crystals' ? g.value + ' C' : g.type === 'survive' ? g.value + 's' : g.type === 'combo' ? 'x' + g.value : g.type === 'kills' ? g.value + ' K' : '';
       btn.innerHTML = '<span class=\"lv-id\">' + lv.id + '</span><span class=\"lv-name\">' + name + '<span class=\"lv-tip\">' + tip + '</span></span><span class=\"lv-goal\">' + goalTxt + '</span>';
-      if (open) btn.addEventListener('click', () => { this.pendingMode = 'campaign'; this.pendingLevel = lv.id; this.engine.setMode('campaign'); this.engine.setLevel(lv.id); this._play(); });
+      if (open) btn.addEventListener('click', () => { audio.unlock(); this.pendingMode = 'campaign'; this.pendingLevel = lv.id; this.engine.setMode('campaign'); this.engine.setLevel(lv.id); this._play(); });
       list.appendChild(btn);
     });
   }
@@ -89,6 +90,7 @@ class Snake3DApp {
       btn.addEventListener('click', () => {
         localStorage.setItem('snake3d_skin', sk.id);
         this.engine?.snake?.setSkin?.(sk.id);
+        audio.playSfx('click');
         grid.querySelectorAll('.skin-card').forEach((el) => el.classList.remove('active'));
         btn.classList.add('active');
       });
@@ -96,12 +98,12 @@ class Snake3DApp {
     });
   }
   _bindUI() {
-    document.getElementById('btn-play')?.addEventListener('click', () => { this.pendingMode = 'arcade'; this.engine.setMode('arcade'); this._play(); });
-    document.getElementById('btn-campaign')?.addEventListener('click', () => { this._buildLevels(); this._showScreen('campaign'); });
+    document.getElementById('btn-play')?.addEventListener('click', () => { audio.unlock(); audio.playSfx('click'); this.pendingMode = 'arcade'; this.engine.setMode('arcade'); this._play(); });
+    document.getElementById('btn-campaign')?.addEventListener('click', () => { audio.playSfx('click'); this._buildLevels(); this._showScreen('campaign'); });
     document.getElementById('btn-campaign-back')?.addEventListener('click', () => this._showScreen('menu'));
-    document.getElementById('btn-worlds')?.addEventListener('click', () => { this._buildWorlds(); this._showScreen('worlds'); });
+    document.getElementById('btn-worlds')?.addEventListener('click', () => { audio.playSfx('click'); this._buildWorlds(); this._showScreen('worlds'); });
     document.getElementById('btn-worlds-back')?.addEventListener('click', () => this._showScreen('menu'));
-    document.getElementById('btn-settings')?.addEventListener('click', () => { this._buildSkins(); this._syncSettingsUI(); this._showScreen('settings'); });
+    document.getElementById('btn-settings')?.addEventListener('click', () => { audio.playSfx('click'); this._buildSkins(); this._syncSettingsUI(); this._showScreen('settings'); });
     document.getElementById('btn-settings-back')?.addEventListener('click', () => this._showScreen('menu'));
     document.getElementById('select-quality')?.addEventListener('change', (e) => {
       const q = e.target.value;
@@ -111,14 +113,27 @@ class Snake3DApp {
         this.engine.renderer.setPixelRatio(pr);
       }
     });
-    document.getElementById('btn-retry')?.addEventListener('click', () => this._play());
-    document.getElementById('btn-restart')?.addEventListener('click', () => this._play());
+    document.getElementById('select-float-text')?.addEventListener('change', (e) => {
+      localStorage.setItem('snake3d_float_text', e.target.value);
+    });
+    document.getElementById('select-haptic')?.addEventListener('change', (e) => {
+      audio.setHaptic(e.target.value === '1');
+    });
+    document.getElementById('input-sfx')?.addEventListener('input', (e) => {
+      audio.setSfxVol(Number(e.target.value) / 100);
+    });
+    document.getElementById('input-master')?.addEventListener('input', (e) => {
+      audio.setMaster(Number(e.target.value) / 100);
+    });
+    document.getElementById('btn-retry')?.addEventListener('click', () => { audio.unlock(); this._play(); });
+    document.getElementById('btn-restart')?.addEventListener('click', () => { audio.unlock(); this._play(); });
     document.getElementById('btn-resume')?.addEventListener('click', () => this.engine.resume());
     document.getElementById('btn-quit')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-menu')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-clear-menu')?.addEventListener('click', () => this._toMenu());
     document.getElementById('btn-pause')?.addEventListener('click', () => this.engine.pause());
     document.getElementById('btn-next-level')?.addEventListener('click', () => {
+      audio.unlock();
       if (this.nextAfterClear) { this.pendingMode = 'campaign'; this.pendingLevel = this.nextAfterClear; this.engine.setMode('campaign'); this.engine.setLevel(this.nextAfterClear); this._play(); }
       else this._toMenu();
     });
@@ -138,6 +153,14 @@ class Snake3DApp {
     if (sens && this.engine?.input) sens.value = String(Math.round((this.engine.input.sensitivity || 1) * 100));
     const q = document.getElementById('select-quality');
     if (q) q.value = localStorage.getItem('snake3d_quality') || 'high';
+    const ft = document.getElementById('select-float-text');
+    if (ft) ft.value = localStorage.getItem('snake3d_float_text') || '1';
+    const hap = document.getElementById('select-haptic');
+    if (hap) hap.value = audio.haptic ? '1' : '0';
+    const sfx = document.getElementById('input-sfx');
+    if (sfx) sfx.value = String(Math.round(audio.sfxVol * 100));
+    const master = document.getElementById('input-master');
+    if (master) master.value = String(Math.round(audio.master * 100));
     this._updateLangButtons();
   }
   _updateLangButtons() {
@@ -161,8 +184,8 @@ class Snake3DApp {
       this.els.hudLevel?.classList.toggle('hidden', !camp);
       if (camp && this.els.levelLabel) this.els.levelLabel.textContent = 'Lv ' + this.pendingLevel;
     } else if (s === GameState.PAUSED) this.els.pause?.classList.remove('hidden');
-    else if (s === GameState.GAMEOVER) { this.els.gameover?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
-    else if (s === GameState.LEVELCLEAR) { this.els.levelclear?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
+    else if (s === GameState.GAMEOVER) { this.els.gameover?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); audio.playSfx('death'); }
+    else if (s === GameState.LEVELCLEAR) { this.els.levelclear?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); audio.playSfx('levelup'); }
     else if (s === GameState.MENU) this._showScreen('menu');
   }
   _onScore(score, combo) {
@@ -223,6 +246,7 @@ class Snake3DApp {
     const fa = this.i18n.language === 'fa';
     el.textContent = fa && data.labelFa ? data.labelFa : data.label;
     el.style.borderColor = data.color || '#3dffb5';
+    audio.playSfx('event');
   }
   _onMission(data) {
     const el = document.getElementById('hud-mission');
@@ -233,6 +257,7 @@ class Snake3DApp {
     const label = fa && data.labelFa ? data.labelFa : data.label;
     el.textContent = data.done ? '✓ ' + label : label + ' (' + data.progress + '/' + data.target + ')';
     el.classList.toggle('done', !!data.done);
+    if (data.done) audio.playSfx('mission');
   }
   _onProgress(data) {
     if (!data) return;
@@ -251,6 +276,7 @@ class Snake3DApp {
     el.style.borderColor = def.accent ? '#' + Number(def.accent).toString(16).padStart(6, '0') : '#2ee6ff';
     clearTimeout(this._wbTimer);
     this._wbTimer = setTimeout(function() { el.classList.add('hidden'); }, 3200);
+    audio.enterWorld(def.id);
   }
   _onToast(data) {
     const el = document.getElementById('hud-toast');
@@ -274,6 +300,7 @@ class Snake3DApp {
     else if (g.type === 'crystals') text = fa ? 'کریستال ' + (p.crystals||0) + '/' + g.value : 'Crystals ' + (p.crystals||0) + '/' + g.value;
     else if (g.type === 'survive') text = fa ? 'زنده ' + Math.floor(p.survive||0) + '/' + g.value + 'ث' : 'Survive ' + Math.floor(p.survive||0) + '/' + g.value + 's';
     else if (g.type === 'combo') text = 'Combo x' + (p.combo||1).toFixed(1) + ' / x' + g.value;
+    else if (g.type === 'kills') text = fa ? 'کشتار ' + (p.kills||0) + '/' + g.value : 'Kills ' + (p.kills||0) + '/' + g.value;
     this.els.hudGoal.textContent = text;
   }
   async _onGameOver(data) {
@@ -295,6 +322,7 @@ class Snake3DApp {
     if (this.els.playerLevel) this.els.playerLevel.textContent = this.stats.level || 1;
   }
   _play() {
+    audio.unlock();
     this.engine.setMode(this.pendingMode);
     if (this.pendingMode === 'campaign') this.engine.setLevel(this.pendingLevel);
     this.engine.startGame();
