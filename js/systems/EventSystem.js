@@ -17,11 +17,27 @@ export class EventSystem {
     this.active = null;
     this.timer = 0;
     this.cooldown = 18;
+    this.meteorT = 0;
+    this.meteorPos = null;
   }
 
   update(dt) {
     if (this.active) {
       this.timer -= dt;
+      if (this.active.id === 'meteor' && this.meteorPos) {
+        this.meteorT -= dt;
+        if (this.meteorT <= 0) {
+          const { x, z } = this.meteorPos;
+          this.engine._burst?.(x, z, 0xff4020, 16);
+          const hx = this.engine.snake?.segments?.[0]?.x || 0;
+          const hz = this.engine.snake?.segments?.[0]?.z || 0;
+          if (Math.hypot(hx - x, hz - z) < 10) {
+            if (this.engine.snake.hasShield()) this.engine.snake.effects.shield = 0;
+            else if (!this.engine.snake.hasGhost()) this.engine.gameOver?.();
+          }
+          this.meteorPos = null;
+        }
+      }
       if (this.timer <= 0) this._end();
       return;
     }
@@ -30,10 +46,7 @@ export class EventSystem {
       const bias = this.engine.world?.def?.eventBias;
       if (bias) {
         const preferred = EVENTS.find((e) => e.id === bias);
-        if (preferred && Math.random() < 0.55) {
-          this._start(preferred);
-          return;
-        }
+        if (preferred && Math.random() < 0.55) { this._start(preferred); return; }
       }
       this._start(EVENTS[(Math.random() * EVENTS.length) | 0]);
     }
@@ -41,23 +54,31 @@ export class EventSystem {
 
   _start(ev) {
     this.active = { ...ev };
-    this.timer = EVENT_DURATION + (ev.id === 'boss_spawn' ? 8 : 0);
+    this.timer = EVENT_DURATION + (ev.id === 'boss_spawn' ? 10 : 0);
     this.engine.onEvent?.(this.active);
+    const e = this.engine;
+    const hx = e.snake?.segments?.[0]?.x || 0;
+    const hz = e.snake?.segments?.[0]?.z || 0;
+
     if (ev.id === 'food_storm' || ev.id === 'crystal_storm') {
-      this.engine.maxFood = Math.min(100, (this.engine.maxFood || 60) + 30);
-      this.engine.spawnOpts = {
-        ...(this.engine.spawnOpts || {}),
-        crystalBias: ev.id === 'crystal_storm' ? 0.4 : 0.1,
-      };
+      e.maxFood = Math.min(110, (e.maxFood || 60) + 35);
+      e.spawnOpts = { ...(e.spawnOpts || {}), crystalBias: ev.id === 'crystal_storm' ? 0.45 : 0.12 };
     }
     if (ev.id === 'ai_invasion' || ev.id === 'boss_spawn') {
-      this.engine.maxAI = Math.min(16, (this.engine.maxAI || 10) + 5);
+      e.maxAI = Math.min(18, (e.maxAI || 10) + 5);
     }
-    if (ev.id === 'cyber_rush' && this.engine.snake) {
-      this.engine.snake._baseSpeedMult = Math.max(this.engine.snake._baseSpeedMult || 1, 1.3);
+    if (ev.id === 'cyber_rush' && e.snake) {
+      e.snake._baseSpeedMult = Math.max(e.snake._baseSpeedMult || 1, 1.35);
     }
-    if (ev.id === 'meteor' && this.engine.snake) {
-      this.engine.snake._baseSpeedMult = Math.max(this.engine.snake._baseSpeedMult || 1, 1.15);
+    if (ev.id === 'meteor') {
+      const ang = Math.random() * Math.PI * 2;
+      const r = 15 + Math.random() * 25;
+      this.meteorPos = { x: hx + Math.cos(ang) * r, z: hz + Math.sin(ang) * r };
+      this.meteorT = 3.5;
+      e.onToast?.({ text: 'METEOR INCOMING', color: '#ff6040' });
+    }
+    if (ev.id === 'treasure_hunt') {
+      e.onToast?.({ text: 'TREASURE HUNT', color: '#ffd060' });
     }
   }
 
@@ -65,9 +86,10 @@ export class EventSystem {
     this.active = null;
     this.cooldown = EVENT_COOLDOWN * (0.65 + Math.random() * 0.7);
     this.engine.onEvent?.(null);
+    this.meteorPos = null;
     if (this.engine.snake) {
-      const worldSpeed = this.engine.world?.def?.speedBias || 1;
-      this.engine.snake._baseSpeedMult = worldSpeed;
+      const base = this.engine.world?.def?.speedBias || 1;
+      if (this.engine.snake._baseSpeedMult > base * 1.1) this.engine.snake._baseSpeedMult = base;
     }
   }
 
@@ -79,9 +101,7 @@ export class EventSystem {
   }
 
   reset() {
-    this.active = null;
-    this.timer = 0;
-    this.cooldown = 22;
+    this.active = null; this.timer = 0; this.cooldown = 22; this.meteorPos = null;
     this.engine.onEvent?.(null);
   }
 }
