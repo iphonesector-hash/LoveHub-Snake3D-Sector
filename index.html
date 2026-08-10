@@ -42,6 +42,10 @@
         <span id="fx-freeze" class="fx-badge freeze hidden">FRZ</span>
         <span id="fx-gbite" class="fx-badge gbite hidden">G-BITE</span>
         <span id="fx-xp" class="fx-badge xp hidden">2XP</span>
+        <span id="fx-venom" class="fx-badge venom hidden">VENOM</span>
+        <span id="fx-turbo" class="fx-badge turbo hidden">TURBO</span>
+        <span id="fx-slow" class="fx-badge slow hidden">SLOW</span>
+        <span id="fx-fortify" class="fx-badge fortify hidden">FORT</span>
         <span class="fx-badge rivals">AI <span id="rivals-count">0</span></span>
       </div>
       <div class="hud-meta">
@@ -78,7 +82,15 @@
     </div>
     <div id="screen-campaign" class="screen hidden"><div class="panel panel-wide"><h2 data-i18n="campaign">CAMPAIGN</h2><div id="level-list" class="level-list"></div><button id="btn-campaign-back" class="btn btn-ghost" data-i18n="back">BACK</button></div></div>
     <div id="screen-worlds" class="screen hidden"><div class="panel panel-wide"><h2 data-i18n="worlds">WORLDS</h2><div id="world-grid" class="world-grid"></div><button id="btn-worlds-back" class="btn btn-ghost" data-i18n="back">BACK</button></div></div>
-    <div id="screen-settings" class="screen hidden"><div class="panel panel-wide"><h2 data-i18n="settings">SETTINGS</h2><div class="setting-row"><span data-i18n="language">Language</span><div class="lang-switch"><button id="btn-set-en" class="lang-btn active">EN</button><button id="btn-set-fa" class="lang-btn">فا</button></div></div><div class="setting-row"><span data-i18n="boost_side">Boost side</span><button id="btn-set-joy" class="btn btn-secondary btn-sm">LEFT / RIGHT</button></div><div class="setting-row"><span data-i18n="sensitivity">Sensitivity</span><input id="input-sens" type="range" min="50" max="150" value="100" /></div><button id="btn-settings-back" class="btn btn-ghost" data-i18n="back">BACK</button></div></div>
+    <div id="screen-settings" class="screen hidden"><div class="panel panel-wide">
+      <h2 data-i18n="settings">SETTINGS</h2>
+      <div class="setting-row"><span data-i18n="language">Language</span><div class="lang-switch"><button id="btn-set-en" class="lang-btn active">EN</button><button id="btn-set-fa" class="lang-btn">فا</button></div></div>
+      <div class="setting-section"><span class="setting-label">Snake Type</span><div id="skin-grid" class="skin-grid"></div></div>
+      <div class="setting-row"><span data-i18n="boost_side">Boost side</span><button id="btn-set-joy" class="btn btn-secondary btn-sm">LEFT / RIGHT</button></div>
+      <div class="setting-row"><span data-i18n="sensitivity">Sensitivity</span><input id="input-sens" type="range" min="50" max="150" value="100" /></div>
+      <div class="setting-row"><span>Quality</span><select id="select-quality" class="setting-select"><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+      <button id="btn-settings-back" class="btn btn-ghost" data-i18n="back">BACK</button>
+    </div></div>
     <div id="screen-pause" class="screen hidden"><div class="panel"><h2 data-i18n="paused">PAUSED</h2><button id="btn-resume" class="btn btn-primary" data-i18n="resume">RESUME</button><button id="btn-restart" class="btn btn-secondary" data-i18n="restart">RESTART</button><button id="btn-quit" class="btn btn-ghost" data-i18n="quit">QUIT</button></div></div>
     <div id="screen-gameover" class="screen hidden"><div class="panel"><h2 data-i18n="game_over">GAME OVER</h2><div class="result-score"><span class="label" data-i18n="score">Score</span><span id="final-score">0</span></div><div class="result-best"><span data-i18n="best_score">Best</span>: <span id="final-best">0</span></div><button id="btn-retry" class="btn btn-primary" data-i18n="retry">RETRY</button><button id="btn-menu" class="btn btn-secondary" data-i18n="menu">MENU</button></div></div>
     <div id="screen-levelclear" class="screen hidden"><div class="panel"><h2 data-i18n="level_clear">LEVEL CLEAR</h2><div class="result-score"><span class="label" data-i18n="score">Score</span><span id="clear-score">0</span></div><button id="btn-next-level" class="btn btn-primary" data-i18n="next_level">NEXT</button><button id="btn-clear-menu" class="btn btn-secondary" data-i18n="menu">MENU</button></div></div>
