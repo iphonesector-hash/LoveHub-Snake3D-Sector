@@ -19,7 +19,6 @@ export function resolveSolidCollision(snake, headPos, collision, dt) {
 
   let obsHit = collision.testHead(hx, hz, margin);
 
-  // Continuous sweep along movement (anti-tunnel at high speed)
   if (!obsHit.hit) {
     const steps = snake.speed > 14 ? 8 : (snake.speed > 10 ? 6 : (snake.speed > 7 ? 4 : 3));
     const look = Math.min(snake.speed * dt * 1.15, 2.2);
@@ -32,7 +31,6 @@ export function resolveSolidCollision(snake, headPos, collision, dt) {
     }
   }
 
-  // Radial samples for thick/box obstacles & corners
   if (!obsHit.hit) {
     const s = 0.42;
     const samples = [
@@ -51,7 +49,6 @@ export function resolveSolidCollision(snake, headPos, collision, dt) {
   const o = obsHit.obstacle;
   if (!o || !o.alive) return { killed: false };
 
-  // Shield absorbs one hit of any kind
   if (snake.hasShield?.()) {
     snake.effects.shield = 0;
     if (snake.effects.fortify) snake.effects.fortify = 0;
@@ -65,7 +62,6 @@ export function resolveSolidCollision(snake, headPos, collision, dt) {
     };
   }
 
-  // Lethal / hazard → death
   if (obsHit.lethal || o.lethal) {
     return {
       killed: true,
@@ -76,7 +72,6 @@ export function resolveSolidCollision(snake, headPos, collision, dt) {
     };
   }
 
-  // Solid obstacle → ALWAYS block (no tunneling even on boost)
   if (obsHit.solid || o.solid !== false) {
     for (let pass = 0; pass < 3; pass++) {
       _pushOut(head, headPos, o, 0.95 + pass * 0.12);
@@ -164,7 +159,6 @@ function _pushOut(head, headPos, o, extra = 0.7) {
   return false;
 }
 
-/** Keep recent body history in sync after a hard push-out so segments do not tunnel. */
 function _syncHistory(snake, head) {
   if (!snake.history || !snake.history.length) return;
   const n = Math.min(8, snake.history.length);
@@ -187,22 +181,26 @@ function _syncHistory(snake, head) {
   }
 }
 
-/** Optional debug wireframe group for colliders (settings toggle). */
-export function createDebugMeshes(obstacles, scene) {
+export function createCollisionDebugGroup(obstacles, scene) {
   const group = new THREE.Group();
   group.name = 'collisionDebug';
   if (!obstacles) return group;
+  const matSolid = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, transparent: true, opacity: 0.45 });
+  const matLethal = new THREE.MeshBasicMaterial({ color: 0xff2200, wireframe: true, transparent: true, opacity: 0.55 });
   for (const o of obstacles) {
     if (!o || !o.alive) continue;
     let mesh;
     if (o.type === 'box') {
-      const geo = new THREE.BoxGeometry((o.halfW || 1) * 2, 0.5, (o.halfD || 1) * 2);
-      const mat = new THREE.MeshBasicMaterial({ color: o.lethal ? 0xff2200 : 0x00ff88, wireframe: true, transparent: true, opacity: 0.45 });
-      mesh = new THREE.Mesh(geo, mat);
+      mesh = new THREE.Mesh(
+        new THREE.BoxGeometry((o.halfW || 1) * 2, 0.5, (o.halfD || 1) * 2),
+        o.lethal ? matLethal : matSolid
+      );
     } else {
-      const geo = new THREE.CylinderGeometry(o.radius || 1, o.radius || 1, 0.5, 12);
-      const mat = new THREE.MeshBasicMaterial({ color: o.lethal ? 0xff2200 : 0x00ff88, wireframe: true, transparent: true, opacity: 0.45 });
-      mesh = new THREE.Mesh(geo, mat);
+      const r = o.radius || 1;
+      mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(r, r, 0.5, 14),
+        o.lethal ? matLethal : matSolid
+      );
     }
     mesh.position.set(o.x, 0.28, o.z);
     group.add(mesh);
