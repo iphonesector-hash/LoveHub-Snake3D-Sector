@@ -9,6 +9,12 @@ const EVENTS = [
   { id: 'meteor', label: 'METEOR SHOWER', labelFa: '\u0628\u0627\u0631\u0634 \u0634\u0647\u0627\u0628', color: '#ff8040' },
   { id: 'boss_spawn', label: 'BOSS SPAWN', labelFa: '\u0638\u0647\u0648\u0631 \u0628\u0627\u0633', color: '#c060ff' },
   { id: 'treasure_hunt', label: 'TREASURE HUNT', labelFa: '\u0634\u06a9\u0627\u0631 \u06af\u0646\u062c', color: '#ffd060' },
+  { id: 'fog', label: 'DENSE FOG', labelFa: '\u0645\u0647 \u063a\u0644\u06cc\u0638', color: '#a0b0c0' },
+  { id: 'solar_storm', label: 'SOLAR STORM', labelFa: '\u0637\u0648\u0641\u0627\u0646 \u062e\u0648\u0631\u0634\u06cc\u062f\u06cc', color: '#ff9040' },
+  { id: 'earthquake', label: 'EARTHQUAKE', labelFa: '\u0632\u0644\u0632\u0644\u0647', color: '#c08040' },
+  { id: 'loot_rain', label: 'LOOT RAIN', labelFa: '\u0628\u0627\u0631\u0634 \u063a\u0646\u06cc\u0645\u062a', color: '#ffd060' },
+  { id: 'double_xp', label: 'DOUBLE XP', labelFa: '\u0627\u06a9\u0633\u067e\u06cc \u062f\u0648\u0628\u0631\u0627\u0628\u0631', color: '#80ffe0' },
+  { id: 'wild_hunt', label: 'WILD HUNT', labelFa: '\u0634\u06a9\u0627\u0631 \u0648\u062d\u0634\u06cc', color: '#ff6080' },
 ];
 
 export class EventSystem {
@@ -95,8 +101,9 @@ export class EventSystem {
 
   getScoreMult() {
     if (!this.active) return 1;
-    if (this.active.id === 'golden_zone' || this.active.id === 'cyber_rush' || this.active.id === 'treasure_hunt') return 2.2;
-    if (this.active.id === 'food_storm') return 1.4;
+    if (this.active.id === 'golden_zone' || this.active.id === 'cyber_rush' || this.active.id === 'treasure_hunt' || this.active.id === 'loot_rain') return 2.2;
+    if (this.active.id === 'food_storm' || this.active.id === 'double_xp') return 1.5;
+    if (this.active.id === 'solar_storm') return 1.3;
     return 1;
   }
 
