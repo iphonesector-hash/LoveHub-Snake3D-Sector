@@ -104,6 +104,7 @@ export class PopulationManager {
         : type === 'elite' ? 10 + ((Math.random() * 6) | 0)
         : 5 + ((Math.random() * 6) | 0);
       const ai = new AISnake(e.scene, { startLength: startLen, aiType: type });
+      if (e.collision) ai.setCollisionSystem(e.collision);
       const dx = x - ai.segments[0].x, dz = z - ai.segments[0].z;
       for (const s of ai.segments) { s.x += dx; s.z += dz; s.mesh.position.set(s.x, 0.34, s.z); }
       for (const h of ai.history) { h.x += dx; h.z += dz; }
@@ -140,6 +141,7 @@ export class PopulationManager {
     const x = hx + Math.cos(ang) * r, z = hz + Math.sin(ang) * r;
     const ai = new AISnake(e.scene, { startLength: 8 + ((Math.random() * 4) | 0), aiType: 'speedster' });
     ai.aiType = 'golden';
+    if (e.collision) ai.setCollisionSystem(e.collision);
     ai.headMat.color.setHex(0xffd060);
     ai.headMat.emissive.setHex(0xffa020);
     ai.headMat.emissiveIntensity = 0.7;
