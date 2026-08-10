@@ -17,12 +17,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 
 /* HUD */
 .hud { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.hud-top { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
-.hud-score, .hud-mass, .hud-combo, .hud-tier, .hud-streak, .hud-level, .hud-timer {
+.hud-top { display: flex; align-items: flex-start; gap: 8px; padding: 12px 14px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); flex-wrap: wrap; }
+.hud-score, .hud-mass, .hud-xp, .hud-plvl, .hud-combo, .hud-tier, .hud-streak, .hud-level, .hud-timer {
   background: rgba(8, 14, 28, 0.72); backdrop-filter: blur(8px); border-radius: 10px;
-  padding: 6px 12px; font-weight: 700; font-size: 14px; border: 1px solid rgba(80, 140, 200, 0.2);
+  padding: 6px 10px; font-weight: 700; font-size: 13px; border: 1px solid rgba(80, 140, 200, 0.2);
 }
-.hud-score .label, .hud-mass .label { font-size: 10px; opacity: 0.6; margin-right: 6px; font-weight: 500; }
+.hud-score .label, .hud-mass .label, .hud-xp .label, .hud-plvl .label { font-size: 10px; opacity: 0.6; margin-right: 5px; font-weight: 500; }
+.hud-xp { border-color: rgba(128, 255, 192, 0.35); color: #80ffc0; }
+.hud-plvl { border-color: rgba(46, 230, 255, 0.4); color: var(--accent); }
 .hud-right { margin-left: auto; pointer-events: auto; }
 .hud-btn { background: rgba(20, 30, 50, 0.8); border: 1px solid rgba(100, 140, 200, 0.3); color: #fff;
   width: 40px; height: 40px; border-radius: 10px; font-size: 14px; cursor: pointer; }
@@ -44,6 +46,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .fx-badge.slow { background: rgba(160, 100, 255, 0.25); border-color: #b080ff; color: #d0b0ff; }
 .fx-badge.fortify { background: rgba(100, 180, 255, 0.25); border-color: #80c0ff; color: #b0d8ff; }
 .hud-meta { position: absolute; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); left: 14px; display: flex; gap: 10px; font-size: 11px; font-weight: 600; color: rgba(180, 210, 255, 0.7); }
+.hud-coins-live { color: #ffd060; }
 .hud-toast {
   position: absolute; top: 28%; left: 50%; transform: translateX(-50%);
   background: rgba(8, 14, 28, 0.88); border: 1.5px solid #ffd060; border-radius: 12px;
@@ -112,6 +115,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg);
 .result-score .label { font-size: 12px; color: var(--muted); display: block; }
 .result-score span:last-child, #final-score, #clear-score { font-size: 36px; font-weight: 800; color: var(--accent); }
 .result-best { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 16px; }
+.result-stats .rs { background: rgba(20,30,50,0.7); border-radius: 8px; padding: 8px; border: 1px solid rgba(80,120,180,0.2); }
+.result-stats .rs-l { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.result-stats .rs span:last-child { font-size: 16px; font-weight: 800; color: #c8e0ff; }
 
 /* Worlds / Levels */
 .world-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
