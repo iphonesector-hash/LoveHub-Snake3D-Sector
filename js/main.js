@@ -3,6 +3,7 @@ import { I18n } from './i18n/I18n.js';
 import { LoveHubBridge } from './integration/LoveHubBridge.js';
 import { GameNetworkService } from './network/GameNetworkService.js';
 import { WORLD_DEFS } from './worlds/SectorCity.js';
+import { SNAKE_SKINS } from './entities/Snake.js';
 import { LEVELS } from './data/levels.js';
 
 class Snake3DApp {
@@ -52,7 +53,7 @@ class Snake3DApp {
       const btn = document.createElement('button'); btn.className = 'world-card';
       const name = this.i18n.language === 'fa' ? w.nameFa : w.name;
       const tag = this.i18n.language === 'fa' ? (w.taglineFa || '') : (w.tagline || '');
-      btn.innerHTML = `<div class=\"world-name\">${name}</div><div class=\"world-meta\">${tag || this.i18n.t('world_open')}</div>`;
+      btn.innerHTML = '<div class=\"world-name\">' + name + '</div><div class=\"world-meta\">' + (tag || this.i18n.t('world_open')) + '</div>';
       btn.addEventListener('click', () => { this.pendingMode = 'arcade'; this.engine.setWorld(w.id); this.engine.setMode('arcade'); this._play(); });
       grid.appendChild(btn);
     });
@@ -66,10 +67,32 @@ class Snake3DApp {
       btn.className = 'level-card' + (open ? '' : ' locked'); btn.disabled = !open;
       const name = fa && lv.labelFa ? lv.labelFa : lv.label;
       const tip = fa && lv.tipFa ? lv.tipFa : (lv.tip || '');
-      const g = lv.goal || {}; let goalTxt = g.type === 'score' ? `${g.value} pts` : g.type === 'length' ? `L${g.value}` : g.type === 'stars' ? `${g.value} ★` : g.type === 'crystals' ? `${g.value} ◆` : g.type === 'survive' ? `${g.value}s` : g.type === 'combo' ? `x${g.value}` : '';
-      btn.innerHTML = `<span class=\"lv-id\">${lv.id}</span><span class=\"lv-name\">${name}<span class=\"lv-tip\">${tip}</span></span><span class=\"lv-goal\">${goalTxt}</span>`;
+      const g = lv.goal || {}; let goalTxt = g.type === 'score' ? g.value + ' pts' : g.type === 'length' ? 'L' + g.value : g.type === 'stars' ? g.value + ' *' : g.type === 'crystals' ? g.value + ' C' : g.type === 'survive' ? g.value + 's' : g.type === 'combo' ? 'x' + g.value : '';
+      btn.innerHTML = '<span class=\"lv-id\">' + lv.id + '</span><span class=\"lv-name\">' + name + '<span class=\"lv-tip\">' + tip + '</span></span><span class=\"lv-goal\">' + goalTxt + '</span>';
       if (open) btn.addEventListener('click', () => { this.pendingMode = 'campaign'; this.pendingLevel = lv.id; this.engine.setMode('campaign'); this.engine.setLevel(lv.id); this._play(); });
       list.appendChild(btn);
+    });
+  }
+  _buildSkins() {
+    const grid = document.getElementById('skin-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    const cur = localStorage.getItem('snake3d_skin') || 'cyan';
+    const fa = this.i18n.language === 'fa';
+    Object.values(SNAKE_SKINS).forEach((sk) => {
+      const btn = document.createElement('button');
+      btn.className = 'skin-card' + (sk.id === cur ? ' active' : '');
+      btn.type = 'button';
+      const name = fa ? sk.nameFa : sk.name;
+      const hex = '#' + sk.head.toString(16).padStart(6, '0');
+      btn.innerHTML = '<span class=\"skin-swatch\" style=\"background:' + hex + ';box-shadow:0 0 12px ' + hex + '\"></span><span class=\"skin-name\">' + name + '</span>';
+      btn.addEventListener('click', () => {
+        localStorage.setItem('snake3d_skin', sk.id);
+        this.engine?.snake?.setSkin?.(sk.id);
+        grid.querySelectorAll('.skin-card').forEach((el) => el.classList.remove('active'));
+        btn.classList.add('active');
+      });
+      grid.appendChild(btn);
     });
   }
   _bindUI() {
@@ -78,8 +101,16 @@ class Snake3DApp {
     document.getElementById('btn-campaign-back')?.addEventListener('click', () => this._showScreen('menu'));
     document.getElementById('btn-worlds')?.addEventListener('click', () => { this._buildWorlds(); this._showScreen('worlds'); });
     document.getElementById('btn-worlds-back')?.addEventListener('click', () => this._showScreen('menu'));
-    document.getElementById('btn-settings')?.addEventListener('click', () => { this._syncSettingsUI(); this._showScreen('settings'); });
+    document.getElementById('btn-settings')?.addEventListener('click', () => { this._buildSkins(); this._syncSettingsUI(); this._showScreen('settings'); });
     document.getElementById('btn-settings-back')?.addEventListener('click', () => this._showScreen('menu'));
+    document.getElementById('select-quality')?.addEventListener('change', (e) => {
+      const q = e.target.value;
+      localStorage.setItem('snake3d_quality', q);
+      if (this.engine?.renderer) {
+        const pr = q === 'high' ? Math.min(window.devicePixelRatio, 2) : q === 'medium' ? 1.25 : 1;
+        this.engine.renderer.setPixelRatio(pr);
+      }
+    });
     document.getElementById('btn-retry')?.addEventListener('click', () => this._play());
     document.getElementById('btn-restart')?.addEventListener('click', () => this._play());
     document.getElementById('btn-resume')?.addEventListener('click', () => this.engine.resume());
@@ -105,6 +136,8 @@ class Snake3DApp {
   _syncSettingsUI() {
     const sens = document.getElementById('input-sens');
     if (sens && this.engine?.input) sens.value = String(Math.round((this.engine.input.sensitivity || 1) * 100));
+    const q = document.getElementById('select-quality');
+    if (q) q.value = localStorage.getItem('snake3d_quality') || 'high';
     this._updateLangButtons();
   }
   _updateLangButtons() {
@@ -113,7 +146,7 @@ class Snake3DApp {
     ['btn-lang-fa', 'btn-set-fa'].forEach((id) => document.getElementById(id)?.classList.toggle('active', !en));
   }
   _setLoading(pct, tip) {
-    if (this.els.loadingFill) this.els.loadingFill.style.width = `${Math.floor(pct * 100)}%`;
+    if (this.els.loadingFill) this.els.loadingFill.style.width = Math.floor(pct * 100) + '%';
     if (tip && this.els.loadingTip) this.els.loadingTip.textContent = this.i18n.t(tip) || tip;
   }
   _showScreen(name) {
@@ -126,7 +159,7 @@ class Snake3DApp {
       this.els.hud?.classList.remove('hidden');
       const camp = this.pendingMode === 'campaign';
       this.els.hudLevel?.classList.toggle('hidden', !camp);
-      if (camp && this.els.levelLabel) this.els.levelLabel.textContent = `Lv ${this.pendingLevel}`;
+      if (camp && this.els.levelLabel) this.els.levelLabel.textContent = 'Lv ' + this.pendingLevel;
     } else if (s === GameState.PAUSED) this.els.pause?.classList.remove('hidden');
     else if (s === GameState.GAMEOVER) { this.els.gameover?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
     else if (s === GameState.LEVELCLEAR) { this.els.levelclear?.classList.remove('hidden'); this.els.hud?.classList.add('hidden'); }
@@ -136,7 +169,7 @@ class Snake3DApp {
     if (this.els.score) this.els.score.textContent = score;
     const massEl = document.getElementById('mass-value');
     if (massEl && this.engine) massEl.textContent = this.engine.getLength();
-    if (combo > 1 && this.els.combo && this.els.comboValue) { this.els.combo.classList.remove('hidden'); this.els.comboValue.textContent = `x${combo.toFixed(1)}`; }
+    if (combo > 1 && this.els.combo && this.els.comboValue) { this.els.combo.classList.remove('hidden'); this.els.comboValue.textContent = 'x' + combo.toFixed(1); }
     else this.els.combo?.classList.add('hidden');
   }
   _onStatus(data) {
@@ -145,13 +178,14 @@ class Snake3DApp {
       bite: ['fx-bite', 'BITE'], speed: ['fx-speed', 'SPD'], shield: ['fx-shield', 'SHIELD'],
       magnet: ['fx-magnet', 'MAG'], ghost: ['fx-ghost', 'GHOST'], multiplier: ['fx-mult', 'x2'],
       freeze: ['fx-freeze', 'FRZ'], golden_bite: ['fx-gbite', 'G-BITE'], double_xp: ['fx-xp', '2XP'],
+      venom: ['fx-venom', 'VENOM'], turbo: ['fx-turbo', 'TURBO'], time_slow: ['fx-slow', 'SLOW'], fortify: ['fx-fortify', 'FORT'],
     };
     for (const [k, [id, label]] of Object.entries(map)) {
       const el = document.getElementById(id);
       if (!el) continue;
       const v = data[k] || 0;
       el.classList.toggle('hidden', !(v > 0));
-      el.textContent = v > 0 ? `${label} ${Math.ceil(v)}s` : '';
+      el.textContent = v > 0 ? label + ' ' + Math.ceil(v) + 's' : '';
     }
     const riv = document.getElementById('rivals-count');
     if (riv) riv.textContent = data.rivals ?? 0;
@@ -168,17 +202,15 @@ class Snake3DApp {
     }
     const streak = document.getElementById('hud-streak');
     if (streak) {
-      if (data.streak >= 3) {
-        streak.textContent = data.streak + 'x STREAK';
-        streak.classList.remove('hidden');
-      } else streak.classList.add('hidden');
+      if (data.streak >= 3) { streak.textContent = data.streak + 'x STREAK'; streak.classList.remove('hidden'); }
+      else streak.classList.add('hidden');
     }
     const lm = document.getElementById('hud-landmark');
     if (lm) {
       if (data.landmark) {
         const fa = this.i18n.language === 'fa';
         const n = fa && data.landmark.nameFa ? data.landmark.nameFa : data.landmark.name;
-        lm.textContent = '◈ ' + n + ' ' + Math.floor(data.landmark.dist || 0);
+        lm.textContent = '◆ ' + n + ' ' + Math.floor(data.landmark.dist || 0);
         lm.classList.remove('hidden');
       } else lm.classList.add('hidden');
     }
@@ -199,7 +231,7 @@ class Snake3DApp {
     el.classList.remove('hidden');
     const fa = this.i18n.language === 'fa';
     const label = fa && data.labelFa ? data.labelFa : data.label;
-    el.textContent = data.done ? `✓ ${label}` : `${label} (${data.progress}/${data.target})`;
+    el.textContent = data.done ? '✓ ' + label : label + ' (' + data.progress + '/' + data.target + ')';
     el.classList.toggle('done', !!data.done);
   }
   _onProgress(data) {
@@ -214,7 +246,7 @@ class Snake3DApp {
     const fa = this.i18n.language === 'fa';
     const title = fa && def.nameFa ? def.nameFa : def.name;
     const sub = fa && def.taglineFa ? def.taglineFa : (def.tagline || '');
-    el.innerHTML = '<div class="wb-title">' + title + '</div><div class="wb-sub">' + sub + '</div>';
+    el.innerHTML = '<div class=\"wb-title\">' + title + '</div><div class=\"wb-sub\">' + sub + '</div>';
     el.classList.remove('hidden');
     el.style.borderColor = def.accent ? '#' + Number(def.accent).toString(16).padStart(6, '0') : '#2ee6ff';
     clearTimeout(this._wbTimer);
@@ -236,12 +268,12 @@ class Snake3DApp {
     this.els.hudGoalBar.classList.remove('hidden');
     const g = data.level.goal, p = data.progress || {}, fa = this.i18n.language === 'fa';
     let text = '';
-    if (g.type === 'score') text = fa ? `امتیاز ${p.score||0}/${g.value}` : `Score ${p.score||0}/${g.value}`;
-    else if (g.type === 'length') text = fa ? `طول ${p.length||0}/${g.value}` : `Length ${p.length||0}/${g.value}`;
-    else if (g.type === 'stars') text = fa ? `ستاره ${p.stars||0}/${g.value}` : `Stars ${p.stars||0}/${g.value}`;
-    else if (g.type === 'crystals') text = fa ? `کریستال ${p.crystals||0}/${g.value}` : `Crystals ${p.crystals||0}/${g.value}`;
-    else if (g.type === 'survive') text = fa ? `زنده ${Math.floor(p.survive||0)}/${g.value}ث` : `Survive ${Math.floor(p.survive||0)}/${g.value}s`;
-    else if (g.type === 'combo') text = `Combo x${(p.combo||1).toFixed(1)} / x${g.value}`;
+    if (g.type === 'score') text = fa ? 'امتیاز ' + (p.score||0) + '/' + g.value : 'Score ' + (p.score||0) + '/' + g.value;
+    else if (g.type === 'length') text = fa ? 'طول ' + (p.length||0) + '/' + g.value : 'Length ' + (p.length||0) + '/' + g.value;
+    else if (g.type === 'stars') text = fa ? 'ستاره ' + (p.stars||0) + '/' + g.value : 'Stars ' + (p.stars||0) + '/' + g.value;
+    else if (g.type === 'crystals') text = fa ? 'کریستال ' + (p.crystals||0) + '/' + g.value : 'Crystals ' + (p.crystals||0) + '/' + g.value;
+    else if (g.type === 'survive') text = fa ? 'زنده ' + Math.floor(p.survive||0) + '/' + g.value + 'ث' : 'Survive ' + Math.floor(p.survive||0) + '/' + g.value + 's';
+    else if (g.type === 'combo') text = 'Combo x' + (p.combo||1).toFixed(1) + ' / x' + g.value;
     this.els.hudGoal.textContent = text;
   }
   async _onGameOver(data) {
