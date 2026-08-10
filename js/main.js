@@ -237,6 +237,12 @@ class Snake3DApp {
         lm.classList.remove('hidden');
       } else lm.classList.add('hidden');
     }
+    const xpEl = document.getElementById('xp-value');
+    if (xpEl) xpEl.textContent = data.xp ?? 0;
+    const plvl = document.getElementById('plvl-value');
+    if (plvl) plvl.textContent = data.level ?? 1;
+    const hcoins = document.getElementById('hud-coins');
+    if (hcoins) hcoins.textContent = data.coins ?? 0;
   }
   _onEvent(data) {
     const el = document.getElementById('hud-event');
@@ -305,6 +311,24 @@ class Snake3DApp {
   }
   async _onGameOver(data) {
     if (this.els.finalScore) this.els.finalScore.textContent = data.score;
+    const goM = document.getElementById('go-mass'); if (goM) goM.textContent = data.length || 0;
+    const goX = document.getElementById('go-xp'); if (goX) goX.textContent = data.xp || 0;
+    const goC = document.getElementById('go-coins'); if (goC) goC.textContent = data.coins || 0;
+    const goK = document.getElementById('go-kills'); if (goK) goK.textContent = (this.engine?.goalProgress?.kills) || 0;
+    const goD = document.getElementById('go-dist');
+    if (goD && this.engine?.snake?.segments?.[0]) {
+      const hx = this.engine.snake.segments[0].x, hz = this.engine.snake.segments[0].z;
+      goD.textContent = Math.floor(Math.hypot(hx, hz));
+    }
+    try {
+      const prev = JSON.parse(localStorage.getItem('snake3d_profile') || '{}');
+      const coins = (prev.coins || 0) + (data.coins || 0);
+      const xp = (prev.xp || 0) + (data.xp || 0);
+      let level = prev.level || 1;
+      let rem = xp;
+      while (rem >= level * 100) { rem -= level * 100; level++; }
+      localStorage.setItem('snake3d_profile', JSON.stringify({ coins, xp: rem, level, bestScore: Math.max(prev.bestScore||0, data.score||0) }));
+    } catch {}
     this.stats = await this.bridge.submitScore(data.score); this._renderStats();
     if (this.els.finalBest) this.els.finalBest.textContent = this.stats.bestScore;
   }
@@ -316,10 +340,14 @@ class Snake3DApp {
     this.bridge.submitScore(data.score);
   }
   _renderStats() {
-    if (!this.stats) return;
-    if (this.els.bestScore) this.els.bestScore.textContent = this.stats.bestScore || 0;
-    if (this.els.coins) this.els.coins.textContent = this.stats.coins || 0;
-    if (this.els.playerLevel) this.els.playerLevel.textContent = this.stats.level || 1;
+    let profile = {};
+    try { profile = JSON.parse(localStorage.getItem('snake3d_profile') || '{}'); } catch {}
+    const best = Math.max(this.stats?.bestScore || 0, profile.bestScore || 0);
+    const coins = Math.max(this.stats?.coins || 0, profile.coins || 0);
+    const level = Math.max(this.stats?.level || 1, profile.level || 1);
+    if (this.els.bestScore) this.els.bestScore.textContent = best;
+    if (this.els.coins) this.els.coins.textContent = coins;
+    if (this.els.playerLevel) this.els.playerLevel.textContent = level;
   }
   _play() {
     audio.unlock();
