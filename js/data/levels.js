@@ -1,5 +1,5 @@
 /**
- * Campaign levels — 30 stages with unique goals + modifiers
+ * Campaign levels — 40 stages with unique goals + modifiers
  */
 
 export const LEVELS = [
@@ -33,6 +33,17 @@ export const LEVELS = [
   { id: 28, world: 'emberValley', label: 'Volcano Survive', labelFa: '\u0632\u0646\u062f\u0647 \u0645\u0627\u0646\u062f\u0646 \u062f\u0631 \u0622\u062a\u0634\u0641\u0634\u0627\u0646', goal: { type: 'survive', value: 75 }, mods: { foodMax: 50, speed: 1.2, hazards: 8 }, tip: 'Survive 75s in the heat', tipFa: '\u06f7\u06f5 \u062b\u0627\u0646\u06cc\u0647 \u062f\u0631 \u062d\u0631\u0627\u0631\u062a' },
   { id: 29, world: 'voidStation', label: 'Void Champion', labelFa: '\u0642\u0647\u0631\u0645\u0627\u0646 \u062e\u0644\u0627\u0621', goal: { type: 'length', value: 40 }, mods: { foodMax: 50, speed: 1.15 }, tip: 'Reach length 40', tipFa: '\u0637\u0648\u0644 \u06f4\u06f0' },
   { id: 30, world: 'ancientRuins', label: 'Legend', labelFa: '\u0627\u0641\u0633\u0627\u0646\u0647', goal: { type: 'score', value: 800 }, mods: { foodMax: 45, speed: 1.3, hazards: 6, starBias: 0.1, ais: 12 }, tip: 'Hard finale — become legend', tipFa: '\u067e\u0627\u06cc\u0627\u0646 \u0633\u062e\u062a — \u0627\u0641\u0633\u0627\u0646\u0647 \u0634\u0648' },
+  // 31-40 advanced stages
+  { id: 31, world: 'deepForest', label: 'Ambush Run', labelFa: '\u06a9\u0645\u06cc\u0646 \u06a9\u0645\u06cc\u0646', goal: { type: 'kills', value: 5 }, mods: { foodMax: 40, speed: 1.05, ais: 14 }, tip: 'Eliminate 5 rival snakes', tipFa: '\u06f5 \u0645\u0627\u0631 \u0631\u0642\u06cc\u0628 \u0631\u0627 \u062d\u0630\u0641 \u06a9\u0646' },
+  { id: 32, world: 'mountainPass', label: 'Peak Survivor', labelFa: '\u0632\u0646\u062f\u0647\u200c\u0645\u0627\u0646 \u0642\u0644\u0647', goal: { type: 'survive', value: 90 }, mods: { foodMax: 42, speed: 0.92, ais: 10 }, tip: 'Survive 90 seconds on the peaks', tipFa: '\u06f9\u06f0 \u062b\u0627\u0646\u06cc\u0647 \u0631\u0648\u06cc \u0642\u0644\u0647' },
+  { id: 33, world: 'canyonLands', label: 'Dust Combo', labelFa: '\u06a9\u0645\u0628\u0648\u06cc \u06af\u0631\u062f', goal: { type: 'combo', value: 10 }, mods: { foodMax: 70, speed: 1.18 }, tip: 'Reach combo x10', tipFa: '\u06a9\u0645\u0628\u0648 x10' },
+  { id: 34, world: 'coastalParadise', label: 'Treasure Shore', labelFa: '\u06af\u0646\u062c \u0633\u0627\u062d\u0644', goal: { type: 'score', value: 700 }, mods: { foodMax: 60, speed: 1.1, starBias: 0.12 }, tip: 'High score by the coast', tipFa: '\u0627\u0645\u062a\u06cc\u0627\u0632 \u0628\u0627\u0644\u0627 \u06a9\u0646\u0627\u0631 \u0633\u0627\u062d\u0644' },
+  { id: 35, world: 'crystalReef', label: 'Crystal Master', labelFa: '\u0627\u0633\u062a\u0627\u062f \u06a9\u0631\u06cc\u0633\u062a\u0627\u0644', goal: { type: 'crystals', value: 20 }, mods: { foodMax: 50, crystalBias: 0.4, speed: 1.05 }, tip: 'Collect 20 crystals', tipFa: '\u06f2\u06f0 \u06a9\u0631\u06cc\u0633\u062a\u0627\u0644' },
+  { id: 36, world: 'emberValley', label: 'Inferno', labelFa: '\u0622\u062a\u0634', goal: { type: 'score', value: 900 }, mods: { foodMax: 48, speed: 1.35, hazards: 10 }, tip: 'Extreme heat and speed', tipFa: '\u062d\u0631\u0627\u0631\u062a \u0648 \u0633\u0631\u0639\u062a \u0634\u062f\u06cc\u062f' },
+  { id: 37, world: 'voidStation', label: 'Ghost Protocol', labelFa: '\u067e\u0631\u0648\u062a\u06a9\u0644 \u0634\u0628\u062d', goal: { type: 'score', value: 650 }, mods: { foodMax: 35, speed: 1.15 }, tip: 'Use Ghost and Teleport wisely', tipFa: '\u0627\u0632 Ghost \u0648 Teleport \u0628\u0647\u0648\u0634\u0645\u0646\u062f\u06cc \u0627\u0633\u062a\u0641\u0627\u062f\u0647 \u06a9\u0646' },
+  { id: 38, world: 'auroraPeak', label: 'Frozen Throne', labelFa: '\u062a\u062e\u062a \u06cc\u062e\u06cc', goal: { type: 'length', value: 50 }, mods: { foodMax: 55, speed: 0.95, crystalBias: 0.25 }, tip: 'Reach length 50 in the cold', tipFa: '\u0637\u0648\u0644 \u06f5\u06f0 \u062f\u0631 \u0633\u0631\u0645\u0627' },
+  { id: 39, world: 'neonDistrict', label: 'Neon Overdrive', labelFa: '\u0646\u0626\u0648\u0646 \u0627\u0648\u0631\u062f\u0631\u0627\u06cc\u0648', goal: { type: 'score', value: 1000 }, mods: { foodMax: 50, speed: 1.4, ais: 16, timeLimit: 120 }, tip: '1000 pts in 2 minutes', tipFa: '\u06f1\u06f0\u06f0\u06f0 \u062f\u0631 \u06f2 \u062f\u0642\u06cc\u0642\u0647' },
+  { id: 40, world: 'ancientRuins', label: 'Eternal Legend', labelFa: '\u0627\u0641\u0633\u0627\u0646\u0647 \u0627\u0628\u062f\u06cc', goal: { type: 'score', value: 1500 }, mods: { foodMax: 55, speed: 1.35, hazards: 8, starBias: 0.12, ais: 15 }, tip: 'The ultimate challenge', tipFa: '\u0622\u062e\u0631\u06cc\u0646 \u0686\u0627\u0644\u0634' },
 ];
 
 export function getLevel(id) {
