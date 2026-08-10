@@ -25,6 +25,8 @@
         <div class="hud-score"><span class="label" data-i18n="score">Score</span><span id="score-value">0</span></div>
         <div class="hud-mass"><span class="label" data-i18n="mass">Mass</span><span id="mass-value">6</span></div>
         <div class="hud-combo hidden" id="combo-display"><span id="combo-value">x1</span></div>
+        <div class="hud-tier hidden" id="hud-tier">SAFE</div>
+        <div class="hud-streak hidden" id="hud-streak">3x STREAK</div>
         <div class="hud-level hidden" id="hud-level"><span id="level-label">Lv 1</span></div>
         <div class="hud-timer hidden" id="hud-timer"><span id="timer-value">0</span></div>
         <div class="hud-right"><button id="btn-pause" class="hud-btn">❚❚</button></div>
@@ -45,7 +47,9 @@
       <div class="hud-meta">
         <span class="hud-dist">⇄ <span id="hud-distance">0</span></span>
         <span id="hud-zone" class="hud-zone"></span>
+        <span id="hud-landmark" class="hud-landmark hidden"></span>
       </div>
+      <div id="hud-toast" class="hud-toast hidden"></div>
       <div id="hud-world-banner" class="hud-world-banner hidden"></div>
       <div id="hud-event" class="hud-event hidden"></div>
       <div id="hud-mission" class="hud-mission hidden"></div>
