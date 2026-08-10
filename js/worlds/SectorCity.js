@@ -5,48 +5,83 @@ import { ChunkStreamer } from '../systems/ChunkStreamer.js';
 export { WORLD_DEFS };
 
 export class SectorCity {
-  constructor(scene, worldId = 'sectorCity') {
+  constructor(scene, worldId = 'sectorCity', collisionSystem = null) {
     this.scene = scene;
     this.def = WORLD_DEFS[worldId] || WORLD_DEFS.sectorCity;
     this.bounds = 1e9;
     this.group = new THREE.Group();
     scene.add(this.group);
     this._buildSky();
-    this.streamer = new ChunkStreamer(scene, this.def);
+    this.streamer = new ChunkStreamer(scene, this.def, collisionSystem);
     this._buildAmbient();
     this._auroraBands = null;
     if (this.def.theme === 'aurora') this._buildAurora();
+    if (this.def.theme === 'void') this._buildStarfield();
   }
 
   _buildSky() {
     const d = this.def;
-    const skyGeo = new THREE.SphereGeometry(220, 32, 16);
-    const skyMat = new THREE.MeshBasicMaterial({
-      color: d.skyTop || d.bg, side: THREE.BackSide, depthWrite: false, fog: false,
+    const skyGeo = new THREE.SphereGeometry(280, 32, 16);
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: {
+        topColor: { value: new THREE.Color(d.skyTop || d.bg) },
+        botColor: { value: new THREE.Color(d.skyBot || d.bg) },
+      },
+      vertexShader: 'varying vec3 vWorld; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: 'uniform vec3 topColor; uniform vec3 botColor; varying vec3 vWorld; void main() { float h = normalize(vWorld).y * 0.5 + 0.5; gl_FragColor = vec4(mix(botColor, topColor, h), 1.0); }',
     });
     this.sky = new THREE.Mesh(skyGeo, skyMat);
     this.group.add(this.sky);
+
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(150, 195, 48),
+      new THREE.RingGeometry(160, 210, 48),
       new THREE.MeshBasicMaterial({
-        color: d.accent, transparent: true, opacity: d.theme === 'neon' ? 0.1 : 0.055,
+        color: d.accent, transparent: true,
+        opacity: d.theme === 'neon' ? 0.12 : 0.06,
         side: THREE.DoubleSide, depthWrite: false, fog: false,
       })
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = -2;
     this.group.add(ring);
+
     if (d.theme === 'neon' || d.theme === 'ember') {
       const ring2 = new THREE.Mesh(
-        new THREE.RingGeometry(100, 120, 32),
+        new THREE.RingGeometry(100, 130, 32),
         new THREE.MeshBasicMaterial({
-          color: d.secondary, transparent: true, opacity: 0.07,
+          color: d.secondary, transparent: true, opacity: 0.08,
           side: THREE.DoubleSide, depthWrite: false, fog: false,
         })
       );
       ring2.rotation.x = -Math.PI / 2;
-      ring2.position.y = 8;
+      ring2.position.y = 10;
       this.group.add(ring2);
+    }
+
+    if (d.theme === 'cyber' || d.theme === 'neon') {
+      for (let i = 0; i < 12; i++) {
+        const ang = (i / 12) * Math.PI * 2;
+        const ht = 8 + Math.random() * 20;
+        const sil = new THREE.Mesh(
+          new THREE.BoxGeometry(3 + Math.random() * 4, ht, 3),
+          new THREE.MeshBasicMaterial({ color: d.skyBot || 0x050a14, fog: false })
+        );
+        sil.position.set(Math.cos(ang) * 120, ht * 0.35, Math.sin(ang) * 120);
+        this.group.add(sil);
+      }
+    }
+    if (d.theme === 'aurora' || d.theme === 'ember') {
+      for (let i = 0; i < 8; i++) {
+        const ang = (i / 8) * Math.PI * 2;
+        const ht = 12 + Math.random() * 18;
+        const sil = new THREE.Mesh(
+          new THREE.ConeGeometry(4 + Math.random() * 3, ht, 4),
+          new THREE.MeshBasicMaterial({ color: d.skyBot || 0x040810, fog: false })
+        );
+        sil.position.set(Math.cos(ang) * 110, ht * 0.3, Math.sin(ang) * 110);
+        this.group.add(sil);
+      }
     }
   }
 
@@ -65,10 +100,9 @@ export class SectorCity {
     }
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     let color = d.accent;
-    if (style === 'embers') color = 0xff6040;
-    else if (style === 'snow') color = 0xe0f0ff;
-    else if (style === 'stars') color = 0xc0d0ff;
-    else if (style === 'neon_sparks') color = 0xff4fd8;
+    if (style === 'embers') color = 0xff6020;
+    if (style === 'snow') color = 0xe0f0ff;
+    if (style === 'stars') color = 0xc0d0ff;
     const mat = new THREE.PointsMaterial({
       color, size: d.particleSize || 0.3, transparent: true, opacity: 0.55,
       depthWrite: false, sizeAttenuation: true,
@@ -83,17 +117,35 @@ export class SectorCity {
     const colors = [0x40ffb0, 0x60a0ff, 0x80ffe0];
     for (let i = 0; i < 3; i++) {
       const band = new THREE.Mesh(
-        new THREE.PlaneGeometry(80 + i * 20, 12 + i * 4),
+        new THREE.PlaneGeometry(90 + i * 25, 14 + i * 5),
         new THREE.MeshBasicMaterial({
-          color: colors[i], transparent: true, opacity: 0.08 + i * 0.02,
+          color: colors[i], transparent: true, opacity: 0.1 + i * 0.03,
           side: THREE.DoubleSide, depthWrite: false, fog: false,
         })
       );
-      band.position.set(0, 35 + i * 8, -40 - i * 15);
-      band.rotation.x = 0.3;
+      band.position.set(0, 40 + i * 10, -50 - i * 15);
+      band.rotation.x = 0.35;
       this._auroraBands.add(band);
     }
     this.group.add(this._auroraBands);
+  }
+
+  _buildStarfield() {
+    const count = 80;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const elev = Math.random() * 0.6 + 0.2;
+      pos[i * 3] = Math.cos(ang) * 150;
+      pos[i * 3 + 1] = 20 + elev * 80;
+      pos[i * 3 + 2] = Math.sin(ang) * 150;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this._stars = new THREE.Points(geo, new THREE.PointsMaterial({
+      color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8, depthWrite: false, sizeAttenuation: true, fog: false,
+    }));
+    this.group.add(this._stars);
   }
 
   applySceneTheme(scene) {
@@ -104,6 +156,7 @@ export class SectorCity {
 
   update(dt, time, playerX = 0, playerZ = 0) {
     if (this.streamer) this.streamer.update(playerX, playerZ);
+    if (this.sky) this.sky.position.set(playerX, 0, playerZ);
     if (this.particles) {
       const pos = this.particles.geometry.attributes.position;
       const arr = pos.array;
@@ -129,13 +182,21 @@ export class SectorCity {
       this._auroraBands.position.x = playerX * 0.05;
       this._auroraBands.position.z = playerZ * 0.05;
       this._auroraBands.children.forEach((b, i) => {
-        b.material.opacity = 0.06 + Math.sin(time * 0.4 + i) * 0.04;
+        b.material.opacity = 0.08 + Math.sin(time * 0.4 + i) * 0.05;
       });
+    }
+    if (this._stars) {
+      this._stars.position.x = playerX * 0.02;
+      this._stars.position.z = playerZ * 0.02;
     }
   }
 
   getZoneAt(x, z) {
     return this.streamer ? this.streamer.getZoneAt(x, z) : 'open';
+  }
+
+  nearestLandmark(x, z) {
+    return this.streamer?.nearestLandmark?.(x, z) || null;
   }
 
   softClamp() {}
