@@ -165,33 +165,33 @@ export class ChunkStreamer {
       name = 'Central Tower'; nameFa = '\u0628\u0631\u062c \u0645\u0631\u06a9\u0632\u06cc';
       const tower = new THREE.Mesh(new THREE.BoxGeometry(3, 16, 3), new THREE.MeshStandardMaterial({ color: 0x1a3048, metalness: 0.6, roughness: 0.3, emissive: d.accent, emissiveIntensity: 0.25 }));
       tower.position.set(0, 8, 0); group.add(tower);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'box', x: ox, z: oz, halfW: 1.6, halfD: 1.6, solid: true, kind: 'building', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'box', x: ox, z: oz, halfW: 1.6, halfD: 1.6, solid: true, lethal: true, kind: 'building', chunkKey: ck }));
     } else if (theme === 'neon') {
       name = 'Neon Cathedral'; nameFa = '\u06a9\u0644\u06cc\u0633\u0627\u06cc \u0646\u0626\u0648\u0646';
       const arch = new THREE.Mesh(new THREE.TorusGeometry(6, 0.4, 8, 24, Math.PI), new THREE.MeshBasicMaterial({ color: d.accent, transparent: true, opacity: 0.8 }));
       arch.rotation.x = -Math.PI / 2; arch.position.y = 0.3; group.add(arch);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 1.2, solid: true, kind: 'building', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 1.2, solid: true, lethal: true, kind: 'building', chunkKey: ck }));
     } else if (theme === 'crystal') {
       name = 'Crystal Heart'; nameFa = '\u0642\u0644\u0628 \u06a9\u0631\u06cc\u0633\u062a\u0627\u0644';
       const big = new THREE.Mesh(new THREE.OctahedronGeometry(5, 0), new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.75, roughness: 0.1, emissive: d.accent, emissiveIntensity: 0.55, transparent: true, opacity: 0.9 }));
       big.position.y = 5; group.add(big);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 3.2, solid: true, kind: 'crystal', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 3.2, solid: true, lethal: true, kind: 'crystal', chunkKey: ck }));
     } else if (theme === 'ember') {
       name = 'Volcano Core'; nameFa = '\u0647\u0633\u062a\u0647 \u0622\u062a\u0634\u0641\u0634\u0627\u0646';
       const cone = new THREE.Mesh(new THREE.ConeGeometry(5, 9, 7), new THREE.MeshStandardMaterial({ color: 0x2a1008, emissive: 0xff3010, emissiveIntensity: 0.5, roughness: 0.8 }));
       cone.position.y = 4.5; group.add(cone);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 4, solid: true, kind: 'rock', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'circle', x: ox, z: oz, radius: 4, solid: true, lethal: true, kind: 'rock', chunkKey: ck }));
       obstacles.push(new WorldObstacle(this.scene, { type: 'hazard', x: ox, z: oz + 6, radius: 3, solid: false, lethal: true, kind: 'lava', chunkKey: ck }));
     } else if (theme === 'void') {
       name = 'Reactor Core'; nameFa = '\u0647\u0633\u062a\u0647 \u0631\u0627\u06a9\u062a\u0648\u0631';
       const plat = new THREE.Mesh(new THREE.CylinderGeometry(5, 5.5, 0.5, 8), new THREE.MeshStandardMaterial({ color: 0x202040, metalness: 0.85, roughness: 0.25, emissive: d.accent, emissiveIntensity: 0.3 }));
       plat.position.y = 0.3; group.add(plat);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'cylinder', x: ox, z: oz, radius: 5, solid: true, kind: 'pillar', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'cylinder', x: ox, z: oz, radius: 5, solid: true, lethal: true, kind: 'pillar', chunkKey: ck }));
     } else {
       name = 'Aurora Shrine'; nameFa = '\u0632\u06cc\u0627\u0631\u062a\u06af\u0627\u0647 \u0634\u0641\u0642';
       const mono = new THREE.Mesh(new THREE.BoxGeometry(2, 12, 2), new THREE.MeshStandardMaterial({ color: 0xc0e8ff, metalness: 0.4, roughness: 0.12, emissive: d.accent, emissiveIntensity: 0.4, transparent: true, opacity: 0.85 }));
       mono.position.y = 6; mono.rotation.y = h * 2; group.add(mono);
-      obstacles.push(new WorldObstacle(this.scene, { type: 'box', x: ox, z: oz, halfW: 1.2, halfD: 1.2, solid: true, kind: 'ice', chunkKey: ck }));
+      obstacles.push(new WorldObstacle(this.scene, { type: 'box', x: ox, z: oz, halfW: 1.2, halfD: 1.2, solid: true, lethal: true, kind: 'ice', chunkKey: ck }));
     }
     group.position.set(ox, 0, oz);
     return { group, obstacles, name, nameFa };

@@ -45,6 +45,7 @@ export class GameEngine {
     this.onProgress = options.onProgress || (() => {});
     this.onWorldEnter = options.onWorldEnter || (() => {});
     this.onToast = options.onToast || (() => {});
+    this.onHitFlash = options.onHitFlash || (() => {});
     this._headPos = new THREE.Vector3(); this._aiHead = new THREE.Vector3();
     this._camTarget = new THREE.Vector3(); this._look = new THREE.Vector3(); this._lookSmooth = new THREE.Vector3();
     this._particles = []; this.population = null; this.events = null; this.missions = null;
@@ -207,6 +208,7 @@ export class GameEngine {
     this.snake.die(burn);
     this.deathSlow = burn ? 0.55 : 0.35;
     this._shake = burn ? 1.0 : 0.6;
+    this.onHitFlash('death');
     this.input.setEnabled(false); this.input.showControls(false);
     const hx = this.snake.segments[0].x, hz = this.snake.segments[0].z;
     this._burst(hx, hz, burn ? 0xff6020 : 0xff4060, burn ? 22 : 14);
@@ -335,6 +337,7 @@ export class GameEngine {
     if (colRes.absorbed) {
       this._floatText('🛡 SHIELD BROKEN', '#60ffb0');
       this._burst(this._headPos.x, this._headPos.z, 0x60ffb0, 8);
+      this.onHitFlash('hit');
     }
     if (colRes.blocked) {
       // Soft haptic-style feedback via toast occasionally

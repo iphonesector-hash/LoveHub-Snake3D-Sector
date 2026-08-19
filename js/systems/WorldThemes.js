@@ -100,7 +100,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(edge);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 0.7 + seed * 0.35, halfD: 0.7 + seed * 0.25, solid: true, kind: 'building', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 0.7 + seed * 0.35, halfD: 0.7 + seed * 0.25, solid: true, lethal: true, kind: 'building', chunkKey: ck });
   } else if (theme === 'neon') {
     const ht = 2 + seed * 10;
     const body = new THREE.Mesh(
@@ -117,7 +117,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(sign);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 0.6 + seed * 0.25, halfD: 0.6 + seed * 0.2, solid: true, kind: 'building', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 0.6 + seed * 0.25, halfD: 0.6 + seed * 0.2, solid: true, lethal: true, kind: 'building', chunkKey: ck });
   } else if (theme === 'crystal') {
     const s = 0.9 + seed * 2.4;
     const crystal = new THREE.Mesh(
@@ -138,7 +138,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     }
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: s * 0.7, solid: true, kind: 'crystal', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: s * 0.7, solid: true, lethal: true, kind: 'crystal', chunkKey: ck });
   } else if (theme === 'ember') {
     const ht = 1.5 + seed * 4;
     const rock = new THREE.Mesh(
@@ -159,7 +159,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     }
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 1.0 + seed * 0.45, solid: true, kind: 'rock', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 1.0 + seed * 0.45, solid: true, lethal: true, kind: 'rock', chunkKey: ck });
   } else if (theme === 'void') {
     const ht = 2 + seed * 7;
     const pillar = new THREE.Mesh(
@@ -177,7 +177,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(cap);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'cylinder', x, z, radius: 0.75, solid: true, kind: 'pillar', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'cylinder', x, z, radius: 0.75, solid: true, lethal: true, kind: 'pillar', chunkKey: ck });
   } else if (theme === 'green') {
     const ht = 2.5 + seed * 5;
     // trunk
@@ -204,7 +204,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     }
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.75 + seed * 0.35, solid: true, kind: 'tree', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.75 + seed * 0.35, solid: true, lethal: true, kind: 'tree', chunkKey: ck });
   } else if (theme === 'forest') {
     const ht = 5 + seed * 10;
     const trunk = new THREE.Mesh(
@@ -229,7 +229,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     }
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.95 + seed * 0.4, solid: true, kind: 'tree', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.95 + seed * 0.4, solid: true, lethal: true, kind: 'tree', chunkKey: ck });
   } else if (theme === 'mountain') {
     const ht = 3.5 + seed * 9;
     const rock = new THREE.Mesh(
@@ -247,7 +247,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(snow);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 1.2 + seed * 0.65, solid: true, kind: 'rock', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 1.2 + seed * 0.65, solid: true, lethal: true, kind: 'rock', chunkKey: ck });
   } else if (theme === 'canyon') {
     const ht = 3 + seed * 8;
     const wall = new THREE.Mesh(
@@ -265,7 +265,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(layer);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 1.0 + seed * 0.8, halfD: 0.8 + seed * 0.5, solid: true, kind: 'rock', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'box', x, z, halfW: 1.0 + seed * 0.8, halfD: 0.8 + seed * 0.5, solid: true, lethal: true, kind: 'rock', chunkKey: ck });
   } else if (theme === 'coastal') {
     const s = 0.9 + seed * 1.6;
     const rock = new THREE.Mesh(
@@ -284,7 +284,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     }
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: s * 0.75, solid: true, kind: 'rock', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: s * 0.75, solid: true, lethal: true, kind: 'rock', chunkKey: ck });
   } else if (theme === 'ruins') {
     const ht = 2.5 + seed * 6;
     const pillar = new THREE.Mesh(
@@ -303,7 +303,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(top);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'cylinder', x, z, radius: 0.75, solid: true, kind: 'pillar', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'cylinder', x, z, radius: 0.75, solid: true, lethal: true, kind: 'pillar', chunkKey: ck });
   } else {
     // aurora / ice default
     const ht = 2.5 + seed * 7;
@@ -315,7 +315,7 @@ export function makeThemeProp(scene, x, z, d, seed, theme, ck) {
     group.add(ice);
     mesh = group;
     mesh.position.set(x, 0, z);
-    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.65 + seed * 0.35, solid: true, kind: 'ice', chunkKey: ck });
+    obs = new WorldObstacle(scene, { type: 'circle', x, z, radius: 0.65 + seed * 0.35, solid: true, lethal: true, kind: 'ice', chunkKey: ck });
   }
   return { mesh, obs };
 }

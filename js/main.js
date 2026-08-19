@@ -44,6 +44,7 @@ class Snake3DApp {
       onProgress: (d) => this._onProgress(d),
       onWorldEnter: (d) => this._onWorldEnter(d),
       onToast: (d) => this._onToast(d),
+      onHitFlash: (kind) => this._onHitFlash(kind),
     });
     this._setLoading(0.3, 'init'); await this.engine.init(); this._setLoading(1, 'ready');
     this._applyStoredQuality();
@@ -301,6 +302,17 @@ class Snake3DApp {
     el.classList.remove('hidden');
     clearTimeout(this._toastTimer);
     this._toastTimer = setTimeout(function() { el.classList.add('hidden'); }, 1800);
+  }
+  _onHitFlash(kind) {
+    const el = document.getElementById('hit-flash');
+    if (!el) return;
+    const cls = kind === 'death' ? 'flash-death' : 'flash-hit';
+    el.classList.remove('flash-hit', 'flash-death');
+    // Force reflow so the animation restarts even if triggered back-to-back
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(this._flashTimer);
+    this._flashTimer = setTimeout(() => el.classList.remove(cls), kind === 'death' ? 450 : 250);
   }
   _onGoal(data) {
     if (!this.els.hudGoalBar || !this.els.hudGoal) return;
