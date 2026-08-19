@@ -46,7 +46,15 @@ class Snake3DApp {
       onToast: (d) => this._onToast(d),
     });
     this._setLoading(0.3, 'init'); await this.engine.init(); this._setLoading(1, 'ready');
+    this._applyStoredQuality();
     await new Promise((r) => setTimeout(r, 150)); this.engine.startLoop(); this._showScreen('menu');
+  }
+  _applyStoredQuality() {
+    const q = localStorage.getItem('snake3d_quality') || 'high';
+    if (this.engine?.renderer) {
+      const pr = q === 'high' ? Math.min(window.devicePixelRatio, 2) : q === 'medium' ? 1.25 : 1;
+      this.engine.renderer.setPixelRatio(pr);
+    }
   }
   _buildWorlds() {
     const grid = document.getElementById('world-grid'); if (!grid) return; grid.innerHTML = '';
